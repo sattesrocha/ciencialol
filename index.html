@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Ciência LOL: a private League of Legends build roulette for three friends.">
+<title>Ciência LOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one centered reading column, app-identity header, then plain sections a reviewer can scan */
+:root{
+  --bg:#070d1a; --panel:#0f1b2e; --line:#1f3352; --fg:#d6dfec; --muted:#8fa0b8;
+  --gold:#c8aa6e; --gold2:#f0e6d2; --teal:#0ac8b9; --ok:#4fbf6a; --no:#ef5b6b;
+  --display:"Cinzel",Georgia,serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15.5px;line-height:1.65;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:760px;margin:0 auto;padding-block:48px 64px;display:flex;flex-direction:column;gap:40px}
+header{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+header .logo{width:84px;height:84px;border-radius:18px;flex:none}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,7vw,52px);letter-spacing:3px;line-height:1.15;margin:0;color:var(--gold2);text-wrap:balance}
+.tag{margin:6px 0 0;color:var(--muted);font-size:15px}
+.pill{display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--teal);border:1px solid rgba(10,200,185,.45);border-radius:999px;padding:3px 10px}
+h2{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:.8px;color:var(--gold2);margin:0 0 12px;text-wrap:balance}
+p{margin:0 0 12px;max-width:68ch}
+section{min-width:0}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0}
+.box h3{margin:0 0 10px;font-size:13px;letter-spacing:1.4px;text-transform:uppercase}
+.box.yes h3{color:var(--ok)} .box.no h3{color:var(--no)}
+.box ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14.5px}
+.box li{display:flex;gap:9px}
+.box li:before{flex:none;font-weight:700}
+.box.yes li:before{content:"✓";color:var(--ok)} .box.no li:before{content:"✕";color:var(--no)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--panel)}
+tr:last-child td{border-bottom:0}
+code{font-family:var(--mono);font-size:12.8px;color:var(--gold2);white-space:nowrap}
+.method{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--teal)}
+.flow{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+a{color:var(--gold)}
+footer{border-top:1px solid var(--line);padding-top:20px;color:var(--muted);font-size:13px;line-height:1.6}
+footer p{max-width:none}
+@media (max-width:620px){.lists{grid-template-columns:1fr}.wrap{padding-block:32px 48px;gap:32px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <svg class="logo" viewBox="0 0 84 84" role="img" aria-label="Ciência LOL logo"><rect x="2" y="2" width="80" height="80" rx="18" fill="#0f1b2e" stroke="#c8aa6e" stroke-width="3"/><path d="M34 18h16M37 18v16L22 60a5 5 0 0 0 4.4 7.5h31.2A5 5 0 0 0 62 60L47 34V18" fill="none" stroke="#c8aa6e" stroke-width="3.5" stroke-linejoin="round"/><path d="M29 50h26l6 10.5a3 3 0 0 1-2.6 4.5H25.6a3 3 0 0 1-2.6-4.5z" fill="#0ac8b9"/><circle cx="40" cy="56" r="2.6" fill="#f0e6d2"/><circle cx="47" cy="52" r="1.8" fill="#f0e6d2"/></svg>
+  <div>
+    <h1>Ciência LOL</h1>
+    <p class="tag">A private build roulette for a group of three League of Legends friends.</p>
+    <span class="pill">Private alpha · Windows</span>
+  </div>
+</header>
+
+<section>
+  <h2>What it is</h2>
+  <p>Ciência LOL is a small Windows desktop app (Go + WebView2) used only by three friends who play League of Legends together in Brazil. In Brazilian League slang a <i>ciência</i> is an off-meta build: an unusual mix of runes and items for a champion, played for fun.</p>
+  <p>Before we queue, the app randomly assigns one of these builds to each of us by role (Top, Jungle, Mid, ADC, Support). Each build lists its runes, summoner spells, skill order and item order. We can also write our own builds, like or comment on them, and track wins and losses inside our group.</p>
+  <p>The app is not public, not sold, has no ads, and has no accounts or servers of its own. It is shared directly between the three of us.</p>
+</section>
+
+<section>
+  <h2>How it would use the League Client API</h2>
+  <p>We want one convenience feature: an <b>Import to League</b> button that sets up the assigned build in the League Client, the same way popular companion apps import rune pages. It talks only to the client running on the same PC, using the local port and password from the client's lockfile, and only before the game starts.</p>
+  <div class="tbl">
+  <table>
+    <thead><tr><th>Endpoint</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><span class="method">GET</span> <code>/lol-summoner/v1/current-summoner</code></td><td>Identify the logged-in player (needed to save the item set).</td></tr>
+      <tr><td><span class="method">GET</span> <code>/lol-champ-select/v1/session</code></td><td>See which champion the player locked in.</td></tr>
+      <tr><td><span class="method">GET POST PUT DELETE</span> <code>/lol-perks/v1/pages</code></td><td>Create or replace one rune page named "Ciencia LOL" with the assigned build. Other rune pages are never touched.</td></tr>
+      <tr><td><span class="method">PUT</span> <code>/lol-perks/v1/currentpage</code></td><td>Select that rune page.</td></tr>
+      <tr><td><span class="method">PATCH</span> <code>/lol-champ-select/v1/session/my-selection</code></td><td>Set the two summoner spells of the assigned build.</td></tr>
+      <tr><td><span class="method">PUT</span> <code>/lol-item-sets/v1/item-sets/{summonerId}/sets</code></td><td>Save the build's recommended items as an item set for that champion.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="margin-top:12px">Rune, item, spell and champion names and icons come from Data Dragon. We do not use the Riot Web API at this time; if we add something later, we will update this registration first.</p>
+</section>
+
+<section>
+  <h2>How the import works</h2>
+  <ol class="flow">
+    <li>The player gets a build from the roulette and opens it.</li>
+    <li>In champion select, the player clicks <b>Import to League</b>.</li>
+    <li>The app writes the rune page, the two summoner spells and the item set, exactly as the player could do by hand in the client.</li>
+    <li>Nothing else happens. Once the game starts, the app does not interact with League at all.</li>
+  </ol>
+</section>
+
+<section class="lists">
+  <div class="box yes"><h3>It does</h3><ul>
+    <li>Set one rune page, two summoner spells and one item set before the match</li>
+    <li>Act only when the player clicks a button</li>
+    <li>Run locally, on the player's own PC</li>
+  </ul></div>
+  <div class="box no"><h3>It never</h3><ul>
+    <li>Reads game memory or modifies game files</li>
+    <li>Interacts with the game during a match</li>
+    <li>Automates any in-game action or shows live match information</li>
+    <li>Collects, stores or shares player data</li>
+  </ul></div>
+</section>
+
+<footer>
+  <p>Ciência LOL was made by <b>Megabrain</b> for felips, vtz and angie. Contact on Instagram: <b>@sattesrocha</b>.</p>
+  <p>Ciência LOL isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, League of Legends and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</p>
+</footer>
+</div>
+</body>
+</html>
