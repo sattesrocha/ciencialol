@@ -49,20 +49,6 @@ jobs:
           name: CienciaLOL
           path: CienciaLOL.exe
 
-      # Depois da aprovação na SignPath Foundation: tirar os comentários e preencher os IDs
-      # (organization-id e project-slug aparecem no painel da SignPath; o token vai em
-      # Settings > Secrets > Actions com o nome SIGNPATH_API_TOKEN).
-      # - name: Assinar (SignPath)
-      #   uses: signpath/github-action-submit-signing-request@v1
-      #   with:
-      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-      #     organization-id: "PREENCHER"
-      #     project-slug: "ciencialol"
-      #     signing-policy-slug: "release-signing"
-      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
-      #     wait-for-completion: true
-      #     output-artifact-directory: signed
-
       # Garante que a tag da versão aponte para o commit atual.
       - name: Atualizar tag da versão
         if: inputs.version != ''
@@ -72,7 +58,6 @@ jobs:
           git push -f origin "v${{ inputs.version }}"
 
       # Publica a Release com o .exe (quando roda por tag v* ou com uma versão preenchida).
-      # Depois que a assinatura estiver ligada, trocar "CienciaLOL.exe" por "signed/CienciaLOL.exe".
       - name: Publicar Release
         if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
         uses: softprops/action-gh-release@v2

@@ -30,9 +30,8 @@ Os binários oficiais são compilados pelo GitHub Actions (`.github/workflows/bu
 A nuvem do grupo e a chave das salas entram só na hora de compilar, pelos segredos do repositório;
 sem eles o app funciona normal, só sem sincronizar a biblioteca.
 
-## Privacidade e assinatura de código
+## Privacidade
 - [Política de privacidade](PRIVACY.md)
-- [Code signing policy](CODE_SIGNING_POLICY.md)
 
 ## Autor
 Felipe Rocha · Instagram [@sattesrocha](https://www.instagram.com/sattesrocha/)
