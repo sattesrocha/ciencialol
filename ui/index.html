@@ -2358,7 +2358,7 @@ function renderOnline(force){
   const freeR = R.mode ? roomFree() : uiMode==="free";
   $("#drawBtn").textContent = freeR ? "✅ REVELAR CAMPEÕES" : online ? "SORTEAR" : "✅ CONFIRMAR CAMPEÕES";
   $("#optsBox").classList.toggle("manual", !online || freeR);
-  $("#waitMsg").innerHTML = freeR ? "Escolha a função e o seu campeão aqui ao lado.<br>O anfitrião revela quando todo mundo estiver pronto." : "Só o anfitrião gira a roleta.<br>Escolha sua função e fique de olho na tela!";
+  $("#waitMsg").innerHTML = freeR ? "Escolha a função (ou 🎲 Aleatória) e o seu campeão aqui ao lado.<br>O anfitrião revela quando todo mundo estiver pronto." : "Só o anfitrião gira a roleta.<br>Escolha sua função e fique de olho na tela!";
   { const hp=$("#v-sorteio .head p"); if(hp) hp.textContent = freeR ? "Freedom: cada um escolhe o campeão que vai jogar (pode ser surpresa) e o anfitrião revela todos juntos." : "Cada um escolhe a função (ou deixa no aleatório) e a roleta decide o experimento."; }
   $("#resultsEmpty").innerHTML = freeR ? `<div class="big">✋ Freedom</div>Cada um escolhe o campeão${roomOpen()?"":" às cegas (ninguém vê o dos outros)"}.<br>Quando todos estiverem prontos, o anfitrião revela.`
     : `<div class="big">A roleta está pronta</div>Monte o time ao lado e aperte <b>Sortear</b>.<br>Cada carta traz a build, as runas e o post com o vídeo.`;
@@ -2542,9 +2542,9 @@ function confirmManual(){
   for(const [i,p] of S.players.entries()){
     const nm=(p.name||"").trim()||("Jogador "+(i+1)), ch=champOf(p.champ);
     if(!ch){ toast(p.champ ? `Não achei o campeão "${p.champ}" (${nm})` : `Escolha o campeão de ${nm}`); const el=document.querySelectorAll(".pc")[i]; if(el){ el.focus(); el.classList.add("need"); } return; }
-    if(!ROLES[p.role]){ toast(`Escolha a função de ${nm}`); const el=document.querySelectorAll(".pr")[i]; if(el) el.focus(); return; }
     picks.push({ player:nm, role:p.role, id:manualCiencia(ch).id, res:null });
   }
+  fillRandomRoles(picks.map(q=>q.role)).forEach((r,i)=>picks[i].role=r);
   // confirmar de novo logo em seguida (ninguém marcou resultado): troca a mesa em vez de criar outra
   const same = current && current.manual && !current.room && current.picks.every(q=>!q.res) && !current.prenda && Date.now()-current.ts < 3*3600e3;
   if(same){ current.picks=picks; current.rev=(current.rev||0)+1; }
@@ -2553,16 +2553,20 @@ function confirmManual(){
   renderResults(!same);
   toast(same ? "Campeões atualizados" : "✅ Campeões confirmados: boa partida!");
 }
+// Freedom com "🎲 Aleatória": sorteia, pra quem deixou aleatória, uma função que ninguém pegou
+function fillRandomRoles(roles){
+  const used=new Set(roles.filter(r=>ROLES[r])); const free=SOLO.filter(r=>!used.has(r)).sort(()=>Math.random()-.5);
+  return roles.map(r=> ROLES[r] ? r : (free.length ? free.shift() : SOLO[Math.floor(Math.random()*SOLO.length)]));
+}
 // sala Freedom: o anfitrião revela os campeões de todo mundo de uma vez
 async function revealFree(){
   if(busy || R.mode!=="host") return;
   const mem=R.members.filter(m=>m.online || m.host);
-  const semFuncao=mem.filter(m=>!ROLES[m.role]);
-  if(semFuncao.length){ toast(`Falta escolher a função: ${semFuncao.map(m=>m.name).join(", ")}`); return; }
   const pend=mem.filter(m=>!champOf(m.champ));
   if(pend.length){ toast(`Ainda escolhendo o campeão: ${pend.map(m=>m.name).join(", ")}`); return; }
+  const roles=fillRandomRoles(mem.map(m=>m.role));
   current={ ts:Date.now(), rev:0, countdown:false, room:R.code, manual:true,
-    picks: mem.map(m=>({ player:m.name, mid:m.id, role:m.role, id:manualCiencia(champOf(m.champ)).id, res:null })) };
+    picks: mem.map((m,i)=>({ player:m.name, mid:m.id, role:roles[i], id:manualCiencia(champOf(m.champ)).id, res:null })) };
   S.history.unshift(current); S.history=S.history.slice(0,5000); save();
   R.publish(); renderOnline(true);
   await reveal(false);
