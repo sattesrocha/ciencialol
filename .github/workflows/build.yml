@@ -1,0 +1,86 @@
+name: build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão pra publicar como Release (ex.: 2.76). Em branco: só gera o .exe"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.7"
+
+      - name: Recursos do Windows (ícone e manifesto)
+        run: |
+          go install github.com/tc-hib/go-winres@v0.3.3
+          go-winres make --in winres/winres.json --arch amd64 --out rsrc
+
+      - name: Testes
+        run: go test ./...
+
+      # A nuvem do Drive e a chave das salas não ficam no código público:
+      # entram só aqui, pelos segredos do repositório (Settings > Secrets and variables > Actions).
+      - name: Compilar
+        env:
+          CGO_ENABLED: "0"
+          CLOUD_URL: ${{ secrets.CLOUD_URL }}
+          CLOUD_KEY: ${{ secrets.CLOUD_KEY }}
+          ROOM_SECRET: ${{ secrets.ROOM_SECRET }}
+        shell: bash
+        run: go build -trimpath -ldflags "-s -w -H windowsgui -X 'main.CloudURL=$CLOUD_URL' -X 'main.CloudKey=$CLOUD_KEY' -X 'main.roomSecret=$ROOM_SECRET'" -o CienciaLOL.exe .
+
+      - name: Guardar o executável
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: CienciaLOL
+          path: CienciaLOL.exe
+
+      # Depois da aprovação na SignPath Foundation: tirar os comentários e preencher os IDs
+      # (organization-id e project-slug aparecem no painel da SignPath; o token vai em
+      # Settings > Secrets > Actions com o nome SIGNPATH_API_TOKEN).
+      # - name: Assinar (SignPath)
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: "PREENCHER"
+      #     project-slug: "ciencialol"
+      #     signing-policy-slug: "release-signing"
+      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      #     wait-for-completion: true
+      #     output-artifact-directory: signed
+
+      # Garante que a tag da versão aponte para o commit atual.
+      - name: Atualizar tag da versão
+        if: inputs.version != ''
+        shell: bash
+        run: |
+          git tag -f "v${{ inputs.version }}"
+          git push -f origin "v${{ inputs.version }}"
+
+      # Publica a Release com o .exe (quando roda por tag v* ou com uma versão preenchida).
+      # Depois que a assinatura estiver ligada, trocar "CienciaLOL.exe" por "signed/CienciaLOL.exe".
+      - name: Publicar Release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
+          name: Ciência LOL ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', inputs.version) }}
+          target_commitish: ${{ github.sha }}
+          files: CienciaLOL.exe
+          body: |
+            Versão alpha do Ciência LOL. Baixe o `CienciaLOL.exe` e abra: não precisa instalar.
+            Depois disso, o próprio app avisa e se atualiza sozinho quando sai versão nova.

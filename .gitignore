@@ -1,0 +1,7 @@
+*.exe
+rsrc_windows_*.syso
+*.pfx
+*.pem
+private_config.go
+admin_windows.go
+roomkey_secret_windows.go

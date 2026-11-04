@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ciência LOL</title>
+<meta name="description" content="Ciência LOL: a roleta de builds fora do meta pra jogar League of Legends com os amigos. Salas online, importação direto pro LoL, Biblioteca, op.gg e muito mais.">
+<meta property="og:title" content="Ciência LOL">
+<meta property="og:description" content="A roleta de builds fora do meta pra jogar League of Legends com os amigos.">
+<meta property="og:image" content="site/poster-apresentacao.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#070d1a; --bg2:#0b1424; --panel:#0f1b2e; --panel2:#13223a; --line:#1f3352; --line2:#2b4569;
+  --fg:#d6dfec; --muted:#8fa0b8; --dim:#5d6f89;
+  --gold:#c8aa6e; --gold2:#f0e6d2; --gold3:#785a28; --teal:#0ac8b9; --pump:#ff8a2b; --purple:#9b6bff;
+  --display:"Cinzel",Georgia,serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  background-image:radial-gradient(1100px 600px at 85% -10%,rgba(10,200,185,.10),transparent 60%),radial-gradient(900px 500px at -10% 10%,rgba(200,170,110,.10),transparent 60%);
+  background-repeat:no-repeat}
+a{color:var(--teal)}
+.wrap{max-width:1120px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-left,0px))}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--gold2)}
+.brand svg{width:40px;height:40px}
+.brand b{font-family:var(--display);font-size:20px;letter-spacing:1px}
+.top nav{display:flex;gap:22px;font-size:14px}
+.top nav a{color:var(--muted);text-decoration:none}
+.top nav a:hover{color:var(--gold2)}
+.hero{display:grid;grid-template-columns:.95fr 1.05fr;gap:48px;align-items:center;padding:44px 0 72px}
+.kicker{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);border:1px solid var(--gold3);border-radius:999px;padding:5px 12px;background:rgba(200,170,110,.06)}
+h1{font-family:var(--display);font-weight:800;color:var(--gold2);font-size:clamp(40px,6vw,64px);line-height:1.05;margin:18px 0 16px;letter-spacing:1px}
+.lead{font-size:18.5px;max-width:520px;margin:0 0 28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;border-radius:12px;padding:14px 22px;font-size:16px;transition:transform .15s,box-shadow .15s}
+.btn.gold{background:linear-gradient(180deg,#e8c98a,#c8aa6e 55%,#a8884e);color:#1a1206;box-shadow:0 10px 30px rgba(200,170,110,.25)}
+.btn.gold:hover{transform:translateY(-1px);box-shadow:0 14px 36px rgba(200,170,110,.35)}
+.btn.ghost{border:1px solid var(--line2);color:var(--gold2);background:rgba(15,27,46,.6)}
+.btn.ghost:hover{border-color:var(--gold3)}
+.btn svg{width:20px;height:20px}
+.meta{font-size:13.5px;color:var(--muted);margin-top:14px}
+.video{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.55);background:#000;aspect-ratio:16/9}
+.video video{display:block;width:100%;height:100%;object-fit:cover}
+section{padding:68px 0;border-top:1px solid rgba(31,51,82,.6)}
+h2{font-family:var(--display);color:var(--gold2);font-size:clamp(26px,3.4vw,36px);margin:0 0 10px;letter-spacing:.5px}
+.sub{color:var(--muted);margin:0 0 34px;max-width:680px}
+/* carinho */
+.love{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+.love p{margin:0 0 14px;font-size:16.5px}
+.love p b{color:var(--gold2)}
+.hw{position:relative;border-radius:18px;padding:28px;background:linear-gradient(160deg,#1c0f2e,#2a1408 70%);border:1px solid #5a3a1c;overflow:hidden}
+.hw::after{content:"🎃";position:absolute;right:-6px;bottom:-14px;font-size:120px;opacity:.18;transform:rotate(-12deg)}
+.hw h3{margin:0 0 8px;font-family:var(--display);color:#ffb35c;font-size:22px}
+.hw p{margin:0;color:#e8d6c4;font-size:15px;position:relative;z-index:1}
+.hw .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;position:relative;z-index:1}
+.hw .tags span{font-size:12.5px;padding:4px 10px;border-radius:999px;background:rgba(255,138,43,.12);border:1px solid rgba(255,138,43,.4);color:#ffcf9c}
+/* recursos */
+.group{margin-top:40px}
+.group h3.gh{display:flex;align-items:center;gap:10px;font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin:0 0 14px}
+.group h3.gh::after{content:"";flex:1;height:1px;background:var(--line)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.feat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.feat .ic{font-size:24px;line-height:1}
+.feat h4{margin:11px 0 6px;font-size:16.5px;color:var(--gold2)}
+.feat p{margin:0;color:var(--muted);font-size:14.5px}
+.feat ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.feat ul li{margin:2px 0}
+/* teaser */
+.teaser{display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:center}
+.teaser p{color:var(--muted);margin:0}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:s}
+.step{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 22px 22px 64px}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:20px;top:20px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#1a1206;background:var(--gold)}
+.step h4{margin:0 0 4px;font-size:16.5px;color:var(--gold2)}
+.step p{margin:0;color:var(--muted);font-size:14.5px}
+.note{display:flex;gap:16px;align-items:flex-start;background:rgba(200,170,110,.06);border:1px solid var(--gold3);border-radius:16px;padding:20px 22px;margin-top:22px}
+.note .ic{font-size:24px}
+.note h4{margin:0 0 4px;color:var(--gold2);font-size:16px}
+.note p{margin:0;font-size:14.5px}
+.note b{color:var(--gold2)}
+.final{text-align:center}
+.final .cta{justify-content:center}
+footer{border-top:1px solid var(--line);padding:30px 0 40px;color:var(--dim);font-size:13px}
+footer .who{color:var(--fg);font-size:14.5px;margin-bottom:12px}
+footer .who a{color:var(--gold2);text-decoration:none;font-weight:600}
+footer .links{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:12px}
+footer a{color:var(--muted)}
+footer p{margin:6px 0;max-width:780px}
+@media (max-width:900px){
+  .hero,.love,.teaser{grid-template-columns:1fr;gap:36px}
+  .hero{padding-top:24px}
+  .grid,.steps{grid-template-columns:1fr 1fr}
+}
+@media (max-width:600px){
+  .top nav{display:none}
+  .grid,.steps{grid-template-columns:1fr}
+  .btn{width:100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#">
+      <svg viewBox="0 0 84 84" aria-hidden="true"><rect x="2" y="2" width="80" height="80" rx="18" fill="#0f1b2e" stroke="#c8aa6e" stroke-width="3"/><path d="M34 18h16M37 18v16L22 60a5 5 0 0 0 4.4 7.5h31.2A5 5 0 0 0 62 60L47 34V18" fill="none" stroke="#c8aa6e" stroke-width="3.5" stroke-linejoin="round"/><path d="M29 50h26l6 10.5a3 3 0 0 1-2.6 4.5H25.6a3 3 0 0 1-2.6-4.5z" fill="#0ac8b9"/><circle cx="40" cy="56" r="2.6" fill="#f0e6d2"/><circle cx="47" cy="52" r="1.8" fill="#f0e6d2"/></svg>
+      <b>Ciência LOL</b>
+    </a>
+    <nav><a href="#sobre">Sobre</a><a href="#recursos">Recursos</a><a href="#como">Como usar</a><a href="#baixar">Baixar</a></nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <span class="kicker">🧪 Pra jogar com os amigos</span>
+      <h1>Ciência LOL</h1>
+      <p class="lead">A roleta de builds fora do meta pra League of Legends. Sorteiem juntos numa sala online, importem a build direto pro LoL com um clique e descubram se a ciência deu certo.</p>
+      <div class="cta">
+        <a class="btn gold" href="https://drive.google.com/uc?export=download&amp;id=1b-mrvIUL-4fsWx4AStme8S9Vxv6k0DDz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Baixar para Windows
+        </a>
+        <a class="btn ghost" href="#recursos">Ver tudo que ele faz</a>
+      </div>
+      <p class="meta">Grátis · Windows 10 e 11 · sem instalar · atualiza sozinho</p>
+    </div>
+    <div class="video"><video src="site/apresentacao.mp4" poster="site/poster-apresentacao.jpg" controls playsinline preload="none" aria-label="Vídeo de apresentação do Ciência LOL"></video></div>
+  </div>
+</div>
+
+<section id="sobre">
+  <div class="wrap love">
+    <div>
+      <h2>Feito com carinho pela comunidade</h2>
+      <p>O Ciência LOL nasceu de uma ideia simples: <b>LoL fica muito mais divertido quando ninguém leva o meta tão a sério</b>. Em vez de copiar a build de sempre, a roleta escolhe um experimento, vocês testam juntos e riem do resultado, ganhando ou perdendo.</p>
+      <p>Tudo é feito por fã, pra fã, de graça e sem anúncios. O app está em <b>fase de teste fechado</b>: cada sugestão vira melhoria, e cada partida estranha vira história pra contar.</p>
+    </div>
+    <div class="hw">
+      <h3>Teste fechado assombrado</h3>
+      <p>Durante os testes a gente não resistiu e criou um <b>tema de Halloween</b> completo: o app inteiro muda de cara, com morcegos, abóboras, música de fundo, uma roleta assombrada e algumas surpresas que é melhor descobrir jogando. Dá pra ligar e desligar quando quiser.</p>
+      <div class="tags"><span>🦇 visual temático</span><span>🎵 trilha própria</span><span>🕸️ roleta assombrada</span><span>👻 sustos surpresa</span><span>🖼️ wallpaper animado</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="recursos">
+  <div class="wrap">
+    <h2>Tudo que o app faz</h2>
+    <p class="sub">Da roleta até a importação no cliente do LoL, tudo num lugar só.</p>
+
+    <div class="group">
+      <h3 class="gh">Salas online</h3>
+      <div class="grid">
+        <div class="feat"><div class="ic">🧪</div><h4>Science</h4><p>O anfitrião gira a roleta e cada um recebe uma ciência pra sua função.</p>
+          <ul><li>🎲 Sortear de novo só a sua carta, e ↩ voltar pra anterior</li><li>Sortear as funções também</li><li>Combos prontos de bot lane</li><li>Evitar repetidas e "só favoritas"</li><li>Contagem regressiva com suspense</li></ul></div>
+        <div class="feat"><div class="ic">✋</div><h4>Freedom</h4><p>Cada um escolhe o campeão que vai jogar, e o anfitrião revela todo mundo junto.</p>
+          <ul><li>Picks surpresa até revelar, ou visíveis na hora</li><li>Escolha com busca e foto dos campeões</li><li>A carta já lista as builds daquele campeão</li></ul></div>
+        <div class="feat"><div class="ic">🔒</div><h4>Salas seguras e fáceis</h4><p>Crie com ou sem senha. Tudo que passa pela sala é criptografado.</p>
+          <ul><li>Lista das salas abertas agora</li><li>Entrar com um clique ou pelo código</li><li>Voltar pra sala depois de fechar o app</li><li>Anfitrião muda funções e remove jogadores</li><li>Modo "pick livre" pra quem só joga de um campeão</li></ul></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3 class="gh">Builds e LoL</h3>
+      <div class="grid">
+        <div class="feat"><div class="ic">⚡</div><h4>Importar pro LoL</h4><p>Um clique e a build vai pro cliente do LoL aberto no seu PC.</p>
+          <ul><li>Página de runas completa</li><li>Feitiços, com o Flash na tecla que você usa (D ou F)</li><li>Conjunto de itens no topo da loja, acima de outros apps</li></ul></div>
+        <div class="feat"><div class="ic">🌐</div><h4>Build do op.gg</h4><p>A build mais usada nas ranqueadas pra cada função.</p>
+          <ul><li>Runas, feitiços, iniciais, botas e núcleo</li><li>Ordem de habilidades</li><li>Aviso quando a amostra é pequena</li></ul></div>
+        <div class="feat"><div class="ic">🎮</div><h4>Minhas partidas</h4><p>As builds que você realmente usou nas últimas partidas, lidas do cliente do LoL, com resultado e KDA, prontas pra importar de novo.</p></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3 class="gh">Biblioteca e comunidade</h3>
+      <div class="grid">
+        <div class="feat"><div class="ic">📚</div><h4>Biblioteca de ciências</h4><p>Dezenas de builds fora do comum com runas, itens, ordem de habilidades e o post com o vídeo da ideia.</p>
+          <ul><li>Busca, filtros por função e ordenação</li><li>Favoritas</li><li>Detalhes completos de cada build</li></ul></div>
+        <div class="feat"><div class="ic">✍️</div><h4>Crie e melhore</h4><p>Monte a sua ciência com o editor visual de runas e itens, ou traga uma guia do FunLeagueBuilds pelo link.</p>
+          <ul><li>Corrija builds da Biblioteca</li><li>Curta e comente as ciências</li><li>Tudo sincroniza entre o grupo</li></ul></div>
+        <div class="feat"><div class="ic">☁️</div><h4>Nuvem do grupo</h4><p>Ciências criadas, curtidas, comentários e um backup do seu histórico e favoritas. Formatou o PC? Volta tudo.</p></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3 class="gh">Diversão depois da partida</h3>
+      <div class="grid">
+        <div class="feat"><div class="ic">🏆</div><h4>Histórico e rankings</h4><p>Marque se ganhou ou perdeu e acompanhe quem é o melhor cientista e qual ciência mais deu certo.</p>
+          <ul><li>Rankings por semana, mês ou sempre</li><li>Estatísticas da partida: KDA, dano, ouro, CS e visão</li><li>A ciência mais quente da semana no Início</li></ul></div>
+        <div class="feat"><div class="ic">😈</div><h4>Prendas</h4><p>Quando o time inteiro perde, a roleta escolhe quem paga a prenda. E às vezes vem a temida prenda suprema, que alguém paga junto.</p></div>
+        <div class="feat"><div class="ic">🖼️</div><h4>Wallpapers e temas</h4><p>Papel de parede do Ciência LOL pro Windows, incluindo o de Halloween animado, e o tema de Halloween pra ligar quando quiser.</p></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3 class="gh">Sempre em dia</h3>
+      <div class="grid">
+        <div class="feat"><div class="ic">🔄</div><h4>Atualização automática</h4><p>O app avisa quando sai versão nova e se atualiza sozinho, sem perder nada.</p></div>
+        <div class="feat"><div class="ic">✨</div><h4>Novidades</h4><p>Cada versão mostra o que mudou numa aba própria, direto no app.</p></div>
+        <div class="feat"><div class="ic">🛡️</div><h4>Privacidade</h4><p>Sem anúncios, sem conta, sem telemetria. As salas são criptografadas e seus dados ficam no seu PC.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap teaser">
+    <div class="video"><video src="site/teaser.mp4" poster="site/poster-teaser.jpg" controls playsinline preload="none" aria-label="Teaser do Ciência LOL"></video></div>
+    <div>
+      <h2>Um campeão. Uma rota. Uma build.</h2>
+      <p>E nenhum deles é escolha sua. A roleta decide, você importa a build com um clique e a partida começa. Assista o teaser em 25 segundos.</p>
+    </div>
+  </div>
+</section>
+
+<section id="como">
+  <div class="wrap">
+    <h2>Como usar</h2>
+    <p class="sub">Em menos de um minuto vocês já estão sorteando.</p>
+    <div class="steps">
+      <div class="step"><h4>Baixe e abra</h4><p>Não precisa instalar nada: é só abrir o arquivo baixado.</p></div>
+      <div class="step"><h4>Crie ou entre numa sala</h4><p>Escolha Science ou Freedom, crie a sala e passe o código pros amigos.</p></div>
+      <div class="step"><h4>Jogue e conte o resultado</h4><p>Cada um importa a sua build pro LoL e, no fim, marca se ganhou ou perdeu.</p></div>
+    </div>
+    <div class="note">
+      <div class="ic">🛡️</div>
+      <div>
+        <h4>Na primeira vez, o Windows pode mostrar um aviso</h4>
+        <p>Como o app é independente e ainda não tem assinatura digital paga, o Windows pode mostrar a tela azul <b>"O Windows protegeu o computador"</b>. É só clicar em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>. Isso aparece uma vez só: as atualizações, feitas pelo próprio app, não mostram o aviso.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="baixar" class="final">
+  <div class="wrap">
+    <h2>Bora fazer ciência?</h2>
+    <p class="sub" style="margin-left:auto;margin-right:auto">Baixe, chame os amigos e deixe a roleta decidir.</p>
+    <div class="cta">
+      <a class="btn gold" href="https://drive.google.com/uc?export=download&amp;id=1b-mrvIUL-4fsWx4AStme8S9Vxv6k0DDz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Baixar para Windows
+      </a>
+    </div>
+    <p class="meta">Teste fechado · o app avisa e se atualiza sozinho quando sai versão nova</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="who">Feito por <b>Felipe Rocha</b> · <a href="https://www.instagram.com/sattesrocha/">@SattesRocha</a></div>
+    <div class="links">
+      <a href="https://github.com/sattesrocha/ciencialol">Código-fonte</a>
+      <a href="https://github.com/sattesrocha/ciencialol/blob/main/PRIVACY.md">Política de privacidade</a>
+      <a href="https://github.com/sattesrocha/ciencialol/blob/main/CODE_SIGNING_POLICY.md">Code signing policy</a>
+      <a href="https://github.com/sattesrocha/ciencialol/blob/main/LICENSE">Licença</a>
+    </div>
+    <p>Ciência LOL isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, League of Legends and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</p>
+  </div>
+</footer>
+</body>
+</html>
