@@ -29,6 +29,7 @@ type lcuConn struct {
 	pass     string
 	cl       *http.Client
 	deadline time.Time // se definido: nenhum pedido passa desse horário (o importar nunca fica preso)
+	log      bool      // anota cada pedido no lcu.log (usado no importar)
 }
 
 // lockfile: "LeagueClient:pid:porta:senha:https"
@@ -76,59 +77,58 @@ func lockfileCandidates() []string {
 	return out
 }
 
-// acha o cliente do LoL que está de fato aberto. O lockfile pode ficar velho (porta antiga,
-// "conexão recusada"), então testa cada candidato e, se nenhum responder, pega a porta e a
-// senha direto da linha de comando do LeagueClientUx.exe que está rodando.
+// acha o cliente do LoL que está de fato aberto. Primeiro o lockfile da pasta de onde o LoL aberto
+// está rodando (o atual), depois os lugares comuns. Cada candidato é conferido com um pedido de
+// verdade (com a senha): um lockfile velho pode apontar pra uma porta que hoje é de outro programa,
+// e aí o importar ficava esperando até estourar o tempo.
 func lcuConnect() (*lcuConn, error) {
-	type cand struct{ port, pass string }
+	type cand struct{ port, pass, from string }
 	var cands []cand
 	var lerr error
 	seen := map[string]bool{}
-	add := func(port, pass string) {
-		if port != "" && pass != "" && !seen[port+pass] {
-			seen[port+pass] = true
-			cands = append(cands, cand{port, pass})
-		}
-	}
-	for _, f := range lockfileCandidates() {
+	add := func(f string) {
 		b, err := os.ReadFile(f)
 		if err != nil {
-			continue
+			return
 		}
 		port, pass, err := parseLockfile(b)
 		if err != nil {
 			lerr = err
-			continue
+			return
 		}
-		add(port, pass)
+		if !seen[port+pass] {
+			seen[port+pass] = true
+			cands = append(cands, cand{port, pass, f})
+		}
 	}
-	alive := func(port string) bool {
-		cn, err := net.DialTimeout("tcp", "127.0.0.1:"+port, 700*time.Millisecond)
+	for _, d := range lcuProcessDirs() {
+		add(filepath.Join(d, "lockfile"))
+	}
+	for _, f := range lockfileCandidates() {
+		add(f)
+	}
+	anyAlive := false
+	for _, c := range cands {
+		cn, err := net.DialTimeout("tcp", "127.0.0.1:"+c.port, 700*time.Millisecond)
 		if err != nil {
-			return false
+			lcuLog("  porta %s fechada (%s)", c.port, c.from)
+			continue
 		}
 		cn.Close()
-		return true
+		anyAlive = true
+		lc := newLcuConn("https://127.0.0.1:"+c.port, c.pass)
+		lc.cl.Timeout = 4 * time.Second
+		t0 := time.Now()
+		st, err := lc.do1("GET", "/lol-gameflow/v1/gameflow-phase", nil, nil)
+		if err == nil || (st >= 400 && st < 500 && st != 401 && st != 403) {
+			lcuLog("  conectado na porta %s em %dms (%s)", c.port, time.Since(t0).Milliseconds(), c.from)
+			lc.cl.Timeout = 10 * time.Second
+			return lc, nil
+		}
+		lcuLog("  porta %s não é o LoL atual ou não respondeu: %d %v (%s)", c.port, st, err, c.from)
 	}
-	for _, c := range cands {
-		if alive(c.port) {
-			return newLcuConn("https://127.0.0.1:"+c.port, c.pass), nil
-		}
-	}
-	// lockfile da pasta de onde o LoL aberto está rodando (o atual, sem chance de ser velho)
-	for _, d := range lcuProcessDirs() {
-		b, err := os.ReadFile(filepath.Join(d, "lockfile"))
-		if err != nil {
-			continue
-		}
-		port, pass, err := parseLockfile(b)
-		if err != nil {
-			continue
-		}
-		add(port, pass)
-		if alive(port) {
-			return newLcuConn("https://127.0.0.1:"+port, pass), nil
-		}
+	if anyAlive {
+		return nil, errors.New("o LoL está aberto mas não respondeu agora (ele pode estar carregando ou reiniciando). Espere alguns segundos e tente de novo")
 	}
 	if len(cands) > 0 {
 		return nil, errors.New("o LoL parece estar reiniciando (a porta dele não respondeu). Espere alguns segundos e tente de novo")
@@ -231,7 +231,21 @@ func (c *lcuConn) do1(method, path string, body any, out any) (int, error) {
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	t0 := time.Now()
 	resp, err := c.cl.Do(req)
+	if c.log {
+		defer func(st *http.Response) {
+			code := 0
+			if st != nil {
+				code = st.StatusCode
+			}
+			if err != nil {
+				lcuLog("  %s %s -> erro em %dms: %v", method, path, time.Since(t0).Milliseconds(), err)
+			} else {
+				lcuLog("  %s %s -> %d em %dms", method, path, code, time.Since(t0).Milliseconds())
+			}
+		}(resp)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "Client.Timeout") || strings.Contains(err.Error(), "deadline") || strings.Contains(err.Error(), "context") {
 			return 0, errors.New("o LoL demorou demais pra responder (tente de novo em alguns segundos)")
@@ -287,25 +301,30 @@ type perkPage struct {
 	Current     bool   `json:"current"`
 }
 
-func lcuImport(payload string, replace bool) (lcuResult, error) {
+func lcuImport(payload string, replace bool) (res lcuResult, err error) {
+	t0 := time.Now()
+	lcuLog("importar (trocar página: %v)", replace)
+	defer func() {
+		if err != nil {
+			lcuLog("  FALHOU em %dms: %v", time.Since(t0).Milliseconds(), err)
+		} else {
+			lcuLog("  fim em %dms: runas=%s feitiços=%s itens=%s", time.Since(t0).Milliseconds(), res.Runes, res.Spells, res.Items)
+		}
+	}()
 	c, err := lcuConnect()
 	if err != nil {
 		return lcuResult{}, err
 	}
-	// prazo total: o botão nunca fica preso esperando o LoL (depois da partida ele às vezes não responde)
-	c.deadline = time.Now().Add(20 * time.Second)
-	c.cl.Timeout = 6 * time.Second
-	// o cliente pode ter reiniciado (porta nova) logo depois da partida: procura de novo uma vez
-	if c.ready() != nil {
-		time.Sleep(2 * time.Second)
-		if c2, err2 := lcuConnect(); err2 == nil {
-			c2.deadline, c2.cl.Timeout = c.deadline, c.cl.Timeout
-			c = c2
-		}
-	}
+	// prazo total: o botão nunca fica preso esperando o LoL (o app espera até 35 s)
+	c.deadline = time.Now().Add(26 * time.Second)
+	c.cl.Timeout = 15 * time.Second
+	c.log = true
+	defer c.cl.CloseIdleConnections()
 	return lcuImportWith(c, payload, replace)
 }
 
+// Runas, feitiços e itens são partes separadas do cliente: vão ao mesmo tempo. Antes iam uma
+// depois da outra e, com o servidor da Riot lento, a soma passava do prazo (botão "travado").
 func lcuImportWith(c *lcuConn, payload string, replace bool) (lcuResult, error) {
 	var b lcuBuild
 	if err := json.Unmarshal([]byte(payload), &b); err != nil {
@@ -315,25 +334,27 @@ func lcuImportWith(c *lcuConn, payload string, replace bool) (lcuResult, error) 
 		return lcuResult{}, err
 	}
 	res := lcuResult{Runes: "-", Spells: "-", Items: "-"}
-
-	// 1) página de runas "Ciência LOL" (troca só a nossa; as suas ficam como estão)
+	var wg sync.WaitGroup
 	if b.Page != nil && len(b.Page.Perks) == 9 && b.Page.Primary > 0 && b.Page.Sub > 0 {
-		res.Runes = c.importRunes(b, replace)
+		wg.Add(1)
+		go func() { defer wg.Done(); res.Runes = c.importRunes(b, replace) }()
 	}
-
-	// 2) feitiços: só dá na seleção de campeões
 	if len(b.Spells) == 2 && b.Spells[0] > 0 && b.Spells[1] > 0 {
-		res.Spells = c.importSpells(b.Spells, b.Flash)
+		wg.Add(1)
+		go func() { defer wg.Done(); res.Spells = c.importSpells(b.Spells, b.Flash) }()
 	}
-
-	// 3) conjunto de itens do campeão (aparece na loja durante a partida)
 	if b.ChampKey > 0 && len(b.Blocks) > 0 {
-		if err := c.importItems(b); err != nil {
-			res.Items = "erro: " + err.Error()
-		} else {
-			res.Items = "ok"
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := c.importItems(b); err != nil {
+				res.Items = "erro: " + err.Error()
+			} else {
+				res.Items = "ok"
+			}
+		}()
 	}
+	wg.Wait()
 	return res, nil
 }
 
@@ -721,4 +742,29 @@ func lcuConnectLockfile() (*lcuConn, error) {
 		return newLcuConn("https://127.0.0.1:"+port, pass), nil
 	}
 	return nil, errors.New("sem LoL")
+}
+
+// ---- registro do importar (lcu.log na pasta de dados): mostra onde cada tentativa parou ----
+var (
+	lcuLogPath string
+	lcuLogMu   sync.Mutex
+)
+
+func lcuLogInit(dir string) { lcuLogPath = filepath.Join(dir, "lcu.log") }
+
+func lcuLog(format string, a ...any) {
+	if lcuLogPath == "" {
+		return
+	}
+	lcuLogMu.Lock()
+	defer lcuLogMu.Unlock()
+	if fi, err := os.Stat(lcuLogPath); err == nil && fi.Size() > 512<<10 {
+		_ = os.Rename(lcuLogPath, lcuLogPath+".old")
+	}
+	f, err := os.OpenFile(lcuLogPath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "%s  %s\n", time.Now().Format("2006-01-02 15:04:05.000"), fmt.Sprintf(format, a...))
 }

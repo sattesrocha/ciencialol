@@ -154,7 +154,7 @@ function loadDD(){
         DDX.itemList.push({ id, en:o.name, pt:(ipt.data[id]||o).name, gold, cat });
       });
       DDX.ready=true;
-    }catch(e){ console.warn("Data Dragon indisponível", e); }
+    }catch(e){ console.warn("Data Dragon indisponível", e); DDX.loading=null; } // falhou (internet caiu um instante): a próxima tentativa carrega de novo
     document.dispatchEvent(new Event("flb-dd"));
   })();
   return DDX.loading;
@@ -177,7 +177,7 @@ const SHARD_ID = { statmodsadaptiveforceicon:5008, statmodsattackspeedicon:5005,
   statmodshealthplusicon:5011, statmodshealthscalingicon:5001, statmodstenacityicon:5013, statmodsarmoricon:5002, statmodsmagicresicon:5003 };
 const SPELL_KEY = { flash:4, ignite:14, barrier:21, exhaust:3, heal:7, teleport:12, smite:11, ghost:6, cleanse:1, clarity:13, mark:32, snowball:32 };
 async function toLCU(vb, champ, title){
-  await loadDD(); const miss=[], missR=[]; const out={ champ, title:String(title||"Ciência LOL").slice(0,75) };
+  await loadDD(); if(!DDX.ready) await loadDD(); const miss=[], missR=[]; const out={ champ, title:String(title||"Ciência LOL").slice(0,75) };
   if(!DDX.ready) throw new Error("não consegui carregar os dados do LoL (Data Dragon)");
   const runeId={}, treeId={};
   (DDX.tree||[]).forEach(t=>{ treeId[norm(t.key)]=treeId[norm(t.name)]=t.id; t.slots.forEach(sl=>sl.runes.forEach(r=>{ runeId[norm(r.name)]=r.id; runeId[norm(r.key)]=r.id; })); });

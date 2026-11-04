@@ -334,3 +334,34 @@ func TestLcuImportNeverHangs(t *testing.T) {
 		t.Fatalf("esperava erro de tempo")
 	}
 }
+
+func TestLcuImportParallelSlowServer(t *testing.T) {
+	// cada pedido demora 1,5 s (servidor da Riot lento): em fila passaria de 10 s
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1500 * time.Millisecond)
+		switch {
+		case r.URL.Path == "/lol-summoner/v1/current-summoner":
+			w.Write([]byte(`{"summonerId":7}`))
+		case r.URL.Path == "/lol-perks/v1/pages" && r.Method == "GET":
+			w.Write([]byte(`[{"id":5,"name":"Ciência LOL","isDeletable":true}]`))
+		case r.URL.Path == "/lol-champ-select/v1/session":
+			w.Write([]byte(`{"localPlayerCellId":0,"myTeam":[{"cellId":0,"spell1Id":4,"spell2Id":14}]}`))
+		case strings.HasSuffix(r.URL.Path, "/sets") && r.Method == "GET":
+			w.Write([]byte(`{"itemSets":[]}`))
+		default:
+			w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+	c := newLcuConn(srv.URL, "x")
+	t0 := time.Now()
+	r, err := lcuImportWith(c, `{"page":{"primaryStyleId":8000,"subStyleId":8100,"selectedPerkIds":[1,2,3,4,5,6,7,8,9]},"spells":[4,14],"champKey":1,"blocks":[{"type":"x","items":["1"]}]}`, false)
+	took := time.Since(t0)
+	if err != nil || r.Runes != "ok" || r.Spells != "ok" || r.Items != "ok" {
+		t.Fatalf("veio %v %+v", err, r)
+	}
+	if took > 7*time.Second {
+		t.Fatalf("demorou %v: as partes deviam ir ao mesmo tempo", took)
+	}
+	t.Logf("importou tudo em %v", took)
+}

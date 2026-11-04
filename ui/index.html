@@ -1717,10 +1717,10 @@ async function importToLoL(c, champ, btn, flash){
     if(pl.noChamp) why.push("não achei o campeão "+champ+" nos dados do LoL (o conjunto de itens não vai)");
     if(!pl.page && !pl.spells && !(pl.blocks||[]).length){ toast("⚡ Nada pra importar nessa build."+(why.length?"\n"+why.join("\n"):" Ela não tem runas, feitiços nem itens marcados."), 12000); return; }
     const MSG="o LoL não respondeu a tempo (se acabou de sair de uma partida, espere alguns segundos e tente de novo)";
-    let r = await limite(window.lcuImport(JSON.stringify(pl), false), 30000, MSG);
+    let r = await limite(window.lcuImport(JSON.stringify(pl), false), 35000, MSG);
     if(r && String(r.runes).startsWith("full:")){
       const nm=String(r.runes).slice(5);
-      if(await uiConfirm(`Suas páginas de runas estão cheias\n\nTrocar a página atual "${nm}" pela da ciência?`, {ok:"Trocar", icon:"⚡"})) r = await limite(window.lcuImport(JSON.stringify(pl), true), 30000, MSG);
+      if(await uiConfirm(`Suas páginas de runas estão cheias\n\nTrocar a página atual "${nm}" pela da ciência?`, {ok:"Trocar", icon:"⚡"})) r = await limite(window.lcuImport(JSON.stringify(pl), true), 35000, MSG);
     }
     const st = v => v==="ok" ? "✓" : v==="-" ? "— (a build não tem)" : v==="fora" ? "só na seleção de campeões" : String(v).startsWith("full:") ? "não trocadas" : "✗";
     const errs=[["Runas",r.runes],["Feitiços",r.spells],["Itens",r.items]].filter(([,v])=>String(v).startsWith("erro")).map(([k,v])=>k+": "+String(v).replace(/^erro:\s*/,""));
@@ -2748,10 +2748,10 @@ async function importExt(b, ch, btn, flash){
   try{
     const pl=extToLCU(b, ch); pl.flash = flash || S.flashKey || "keep";
     const MSG="o LoL não respondeu a tempo (se acabou de sair de uma partida, espere alguns segundos e tente de novo)";
-    let r = await limiteMs(window.lcuImport(JSON.stringify(pl), false), 30000, MSG);
+    let r = await limiteMs(window.lcuImport(JSON.stringify(pl), false), 35000, MSG);
     if(r && String(r.runes).startsWith("full:")){
       const nm=String(r.runes).slice(5);
-      if(await uiConfirm(`Suas páginas de runas estão cheias\n\nTrocar a página atual "${nm}" por essa?`, {ok:"Trocar", icon:"⚡"})) r = await limiteMs(window.lcuImport(JSON.stringify(pl), true), 30000, MSG);
+      if(await uiConfirm(`Suas páginas de runas estão cheias\n\nTrocar a página atual "${nm}" por essa?`, {ok:"Trocar", icon:"⚡"})) r = await limiteMs(window.lcuImport(JSON.stringify(pl), true), 35000, MSG);
     }
     const st = v => v==="ok" ? "✓" : v==="-" ? "—" : v==="fora" ? "só na seleção de campeões" : String(v).startsWith("full:") ? "não trocadas" : "✗";
     const errs=[["Runas",r.runes],["Feitiços",r.spells],["Itens",r.items]].filter(([,v])=>String(v).startsWith("erro")).map(([k,v])=>k+": "+String(v).replace(/^erro:\s*/,""));

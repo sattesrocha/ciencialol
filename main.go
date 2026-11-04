@@ -66,6 +66,7 @@ func main() {
 	startLog(dir)
 	logStep("início (versão " + AppVersion + ")")
 	opggInit(dir)
+	lcuLogInit(dir)
 	// se o programa der erro e fechar, guarda o motivo e avisa (em vez de sumir sem explicação)
 	defer func() {
 		if r := recover(); r != nil {
