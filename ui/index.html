@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ciência LOL</title>
 <script>(function(){ var on=window.__HWPREF; try{ var lp=localStorage.getItem("hwpref"); if(lp==="1"||lp==="0") on=(lp==="1"); }catch(e){} if(on===undefined){ try{ var st=JSON.parse(localStorage.getItem("ciencia-state")||"{}"); on=!(st.opts&&st.opts.halloween===false); }catch(e){ on=true; } }
-  window.__HWON=on; if(on) document.documentElement.classList.add("hwpre"); })();</script>
+  window.__HWON=on; if(on) document.documentElement.classList.add("hwpre");
+  // a tela só aparece depois de carregar os dados salvos (sem mostrar o padrão e trocar logo em seguida)
+  document.documentElement.classList.add("booting"); setTimeout(function(){ document.documentElement.classList.remove("booting"); }, 4000); })();</script>
 <style>
 @font-face{font-family:Cinzel;src:url(fonts/cinzel.ttf) format("truetype");font-weight:400 900;font-display:swap}
 @font-face{font-family:Inter;src:url(fonts/inter.ttf) format("truetype");font-weight:100 900;font-display:swap}
@@ -16,7 +18,7 @@
   --top:#e8a33c; --jungle:#4fbf6a; --mid:#4aa8ff; --adc:#ef5b6b; --sup:#c58bff; --duo:#0ac8b9;
   --r:14px;
 }
-html.hwpre body{visibility:hidden}
+html.hwpre body,html.booting body{visibility:hidden}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;font-size:14px;overflow:hidden}
 body{background:
@@ -3617,7 +3619,7 @@ const G = {
   }
   else if(R.savedRoom()){ setMode(R.savedRoom().kind==="free"?"free":"online"); $(".nav button[data-v=sorteio]").click(); toast("Você tem uma sala aberta: clique em Voltar pra sala"); } else renderOnline();
   $("#optSound").checked = S.opts.sound!==false; $("#optVol").value = S.opts.vol??70; syncVol();
-})();
+})().finally(()=>requestAnimationFrame(()=>document.documentElement.classList.remove("booting")));
 </script>
 </body>
 </html>
