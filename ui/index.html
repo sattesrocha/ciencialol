@@ -626,6 +626,42 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 .mh-form i{width:14px;height:14px;border-radius:3px;background:var(--line2);font-style:normal;font-size:9px;font-weight:800;color:#06101c;display:flex;align-items:center;justify-content:center}
 .mh-form i.w{background:var(--teal)} .mh-form i.l{background:var(--red)}
 @media (max-width:980px){ .mrow{grid-template-columns:96px 1fr 110px 24px} .m-team{display:none} }
+.mrow{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.mrow:hover{transform:translateY(-1px);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+/* detalhes da partida */
+.mg-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:2px 40px 16px 0}
+.mg-head .rs{font-family:Cinzel,Georgia,serif;font-size:26px;color:var(--dim)}
+.mg-head .rs.w{color:var(--teal)} .mg-head .rs.l{color:var(--red)}
+.mg-head .meta{color:var(--muted);font-size:13px}
+.mg h5{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+.mg h5 .t{color:var(--gold2)}
+.mg-tbl{width:100%;border-collapse:separate;border-spacing:0 4px;font-size:12.5px}
+.mg-tbl th{font-weight:600;color:var(--dim);text-align:center;padding:0 6px;font-size:11px}
+.mg-tbl th:first-child{text-align:left}
+.mg-tbl td{background:var(--bg2);padding:6px;text-align:center;white-space:nowrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.mg-tbl td:first-child{border-left:1px solid var(--line);border-radius:9px 0 0 9px;text-align:left}
+.mg-tbl td:last-child{border-right:1px solid var(--line);border-radius:0 9px 9px 0}
+.mg-tbl tr.ours td{background:rgba(200,170,110,.08);border-color:var(--gold3)}
+.mg-p{display:flex;align-items:center;gap:8px;min-width:0}
+.mg-p .icon{width:34px;height:34px;border-radius:8px;flex:none}
+.mg-p .lv{position:relative}
+.mg-p .lv b{position:absolute;right:-4px;bottom:-4px;font-size:9.5px;background:var(--bg);border:1px solid var(--line2);border-radius:6px;padding:0 3px;color:var(--gold2)}
+.mg-p .nm{display:flex;flex-direction:column;min-width:0;max-width:190px}
+.mg-p .nm b{color:var(--text);overflow:hidden;text-overflow:ellipsis}
+.mg-p .nm span{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+.mg-p .nm .cz{color:var(--gold2)}
+.mg-sp{display:grid;grid-template-columns:repeat(2,18px);gap:2px}
+.mg .xi{width:18px;height:18px;border-radius:4px;overflow:hidden;display:inline-block;background:var(--panel2);vertical-align:middle}
+.mg .xi img{width:100%;height:100%;display:block}
+.mg .it .xi{width:26px;height:26px;border-radius:5px;margin:0 1px}
+.mg .kda b{color:var(--text)} .mg .kda .d{color:var(--red)}
+.mg .kda small{display:block;color:var(--muted);font-size:10.5px}
+.mg .dmg{min-width:70px}
+.mg .dmg i{display:block;height:4px;border-radius:2px;background:var(--red);margin-top:3px;opacity:.75}
+.mg-bt{padding:5px 10px!important;font-size:12px!important}
+.mg-note{color:var(--muted);font-size:12.5px;padding:12px 14px;border:1px dashed var(--line2);border-radius:10px;margin-top:6px}
+.mg-team-w h5 .t{color:var(--teal)} .mg-team-l h5 .t{color:var(--red)}
+.mback{margin:0 0 10px}
 .hrow .date{color:var(--muted);font-size:12px}
 .hrow .picks{display:flex;gap:8px;flex-wrap:wrap}
 .hpick{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:4px 9px 4px 4px;font-size:12.5px}
@@ -3243,10 +3279,10 @@ function histRows(list, sel){
       const kda = st ? `<div class="k">${st.k} / <span class="d">${st.d}</span> / ${st.a}</div><div class="r"><b>${st.d?ratio.toFixed(2).replace(".",","):"Perfeito"}</b>${st.d?" KDA":""}</div><div class="x">${st.cs} CS · ${fmtK(st.dmg)} dano</div>`
         : `<div class="nk">${r?"sem estatísticas":"—"}</div>`;
       const team=d.picks.map((p,i)=>{ const pc=byId(p.id); if(!pc) return ""; const pch=p.part===2?pc.champ2:pc.champ;
-        return `<div class="tp${i===fi?" me":""}" data-detail="${pc.id}" title="${esc(p.player)} · ${esc(pc.nome)}">${iconDiv(pch)}<span>${esc(p.player)}</span><i class="rd ${p.res||""}"></i></div>`; }).join("");
-      return `<div class="mrow ${r}">
+        return `<div class="tp${i===fi?" me":""}" title="${esc(p.player)} · ${esc(pc.nome)}">${iconDiv(pch)}<span>${esc(p.player)}</span><i class="rd ${p.res||""}"></i></div>`; }).join("");
+      return `<div class="mrow ${r}" data-match="${d.ts}">
         <div class="m-res"><b>${r==="w"?"VITÓRIA":r==="l"?"DERROTA":"SEM RESULTADO"}</b><span title="${ago(d.ts)}">${new Date(d.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}${st&&st.dur?` · ${Math.round(st.dur/60)} min`:""}</span><span class="m-mode">${mode(d)}</span></div>
-        <div class="m-main" data-detail="${c.id}"><div class="m-ico">${iconDiv(ch)}<span class="m-role">${esc(ROLES[f.role]||"—")}</span></div>
+        <div class="m-main"><div class="m-ico">${iconDiv(ch)}<span class="m-role">${esc(ROLES[f.role]||"—")}</span></div>
           <div class="m-txt"><div class="n">${esc(c.nome)}</div><div class="c"><span class="who">${esc(f.player)}</span> · ${esc(ch)}</div></div></div>
         <div class="m-kda">${kda}</div>
         <div class="m-team">${team}</div>
@@ -3254,6 +3290,61 @@ function histRows(list, sel){
       </div>`;
     }).join("");
   }).join("");
+}
+// ---- detalhes da partida (como no histórico do LoL) ----
+document.addEventListener("click", e=>{
+  if(e.target.closest("[data-delh]")) return;
+  const m=e.target.closest("[data-match]"); if(m){ openMatch(+m.dataset.match); return; }
+  const b=e.target.closest("[data-mbuild]"); if(b){ const ts=+b.dataset.back; openDetail(b.dataset.mbuild);
+    const md=$("#modal"); if(md && md.innerHTML){ const bk=document.createElement("button"); bk.className="btn sm ghost mback"; bk.textContent="← Voltar pra partida"; bk.onclick=()=>openMatch(ts); md.insertBefore(bk, md.children[1]||null); } }
+});
+const mgTime = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+function openMatch(ts){
+  const d=S.history.find(x=>x.ts===ts); if(!d) return;
+  const rs=d.picks.map(p=>p.res).filter(Boolean); const r=rs.length? (rs.filter(x=>x==="w").length>=rs.length/2?"w":"l") : "";
+  const st0=(d.picks.find(p=>p.st&&p.st.dur)||{}).st; const gid=(d.picks.find(p=>p.st&&p.st.gid)||{}).st?.gid||0;
+  const mode=d.manual?"✋ Freedom":d.room?"🧪 Science":"🎲 Neste PC";
+  const rows=d.picks.map(p=>{ const c=byId(p.id); if(!c) return ""; const ch=p.part===2?c.champ2:c.champ; const st=p.st;
+    return `<tr class="ours"><td><div class="mg-p">${iconDiv(ch)}<div class="nm"><b>${esc(p.player)}</b><span><span class="cz">${esc(c.nome)}</span> · ${esc(ROLES[p.role]||"")}</span></div></div></td>
+      <td>${p.res?`<b class="res-${p.res}">${p.res==="w"?"V":"D"}</b>`:"—"}</td>
+      <td class="kda">${st?`<b>${st.k} / <span class="d">${st.d}</span> / ${st.a}</b><small>${st.d?((st.k+st.a)/st.d).toFixed(2).replace(".",","):"Perfeito"} KDA</small>`:"—"}</td>
+      <td>${st?st.cs:"—"}</td><td>${st?fmtK(st.dmg):"—"}</td><td>${st?fmtK(st.gold):"—"}</td><td>${st?st.vis:"—"}</td>
+      <td><button class="btn sm mg-bt" data-mbuild="${c.id}" data-back="${d.ts}">📋 Ver build</button></td></tr>`; }).join("");
+  openModal(`<div class="mg">
+    <div class="mg-head"><span class="rs ${r}">${r==="w"?"Vitória":r==="l"?"Derrota":"Sem resultado"}</span>
+      <span class="meta">${new Date(d.ts).toLocaleString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}${st0&&st0.dur?` · ${mgTime(st0.dur)}`:""} · ${mode}${d.room?` · sala ${esc(d.room)}`:""}</span></div>
+    <h5><span class="t">Lobby do Ciência LOL</span></h5>
+    <table class="mg-tbl"><tr><th>Jogador</th><th></th><th>KDA</th><th>CS</th><th>Dano</th><th>Ouro</th><th>Visão</th><th></th></tr>${rows}</table>
+    <div id="mgFull">${gid && window.lcuGame ? `<div class="mg-note">⏳ Buscando a partida completa no LoL…</div>`
+      : `<div class="mg-note">${gid?"A partida completa (os 10 jogadores, itens e runas) aparece aqui quando o app está rodando com o LoL.":"Essa partida não tem as estatísticas do LoL salvas, então só dá pra ver o lobby."}</div>`}</div>
+  </div>`);
+  if(gid && window.lcuGame) loadMatchFull(gid, d);
+}
+async function loadMatchFull(gid, d){
+  let g; try{ g=await Promise.race([window.lcuGame(String(gid)), new Promise((_,rj)=>setTimeout(()=>rj(new Error("o LoL demorou demais pra responder")),35000))]); }
+  catch(e){ const b=$("#mgFull"); if(b) b.innerHTML=`<div class="mg-note">Não deu pra buscar a partida completa: ${esc(String(e&&e.message||e))}. Abra o LoL e clique na partida de novo.</div>`; return; }
+  const box=$("#mgFull"); if(!box) return;
+  try{ await FLBDD.loadDD(); }catch(e){}
+  const D=window.FLBDD;
+  // quem é do lobby: pelo campeão salvo nas estatísticas ou pelo campeão da ciência; só no time onde está o grupo
+  const keyOf=p=>{ if(p.st&&p.st.champ) return p.st.champ; const c=byId(p.id); if(!c) return 0; const id=cid(p.part===2?c.champ2:c.champ); const x=(CHAMPS||[]).find(z=>z.id===id); return x?x.key:0; };
+  const pk=d.picks.map(p=>[keyOf(p),p]).filter(x=>x[0]);
+  const ti=g.teams.map(t=>t.players.filter(pl=>pk.some(x=>x[0]===pl.champ)).length); const ourT=ti.indexOf(Math.max(...ti));
+  const ours={}; if(ti[ourT]>0) pk.forEach(([k,p])=>{ if(g.teams[ourT].players.some(pl=>pl.champ===k)) ours[k]=p; });
+  const maxDmg=Math.max(1,...g.teams.flatMap(t=>t.players.map(p=>p.dmg)));
+  const team=(t,i)=>{ const k=t.players.reduce((a,p)=>a+p.k,0), dd=t.players.reduce((a,p)=>a+p.d,0), aa=t.players.reduce((a,p)=>a+p.a,0), gold=t.players.reduce((a,p)=>a+p.gold,0);
+    return `<div class="mg-team-${t.win?"w":"l"}"><h5><span class="t">${t.win?"Vitória":"Derrota"}</span> · Time ${t.id===100?"azul":t.id===200?"vermelho":i+1} · ${k}/${dd}/${aa} · ${fmtK(gold)} ouro</h5>
+    <table class="mg-tbl"><tr><th>Jogador</th><th></th><th>KDA</th><th>CS</th><th>Dano</th><th>Ouro</th><th>Visão</th><th>Itens</th></tr>
+    ${t.players.map(p=>{ const ch=(CHAMP_BY_KEY[p.champ]||{}); const o=i===ourT?ours[p.champ]:null; const oc=o&&byId(o.id);
+      return `<tr class="${o?"ours":""}"><td><div class="mg-p"><span class="lv">${iconDiv(ch.id||ch.name||"?")}<b>${p.lvl}</b></span>
+        <span class="mg-sp">${p.spells.map(x=>xIco(D.spellIdInfo(x))).join("")}${xIco(D.runeIdInfo(p.rune))}${xIco(D.runeIdInfo(p.sub))}</span>
+        <div class="nm"><b>${esc(p.name||ch.name||"?")}</b><span>${o?`<span class="cz">${esc(oc?oc.nome:"")}</span> · ${esc(o.player)}`:esc(ch.name||"")}</span></div></div></td>
+        <td>${o&&oc?`<button class="btn sm mg-bt" data-mbuild="${oc.id}" data-back="${d.ts}" title="Ver a build da ciência">📋</button>`:""}</td>
+        <td class="kda"><b>${p.k} / <span class="d">${p.d}</span> / ${p.a}</b><small>${p.d?((p.k+p.a)/p.d).toFixed(2).replace(".",","):"Perfeito"} KDA</small></td>
+        <td>${p.cs}<small style="display:block;color:var(--muted);font-size:10.5px">${g.dur?(p.cs/(g.dur/60)).toFixed(1).replace(".",","):""}/min</small></td>
+        <td class="dmg">${fmtK(p.dmg)}<i style="width:${Math.round(p.dmg/maxDmg*100)}%"></i></td><td>${fmtK(p.gold)}</td><td>${p.vis}</td>
+        <td class="it">${p.items.map(x=>x?xIco(D.itemIdInfo(x)):`<span class="xi"></span>`).join("")}</td></tr>`; }).join("")}</table></div>`; };
+  box.innerHTML=`<h5><span class="t">Partida completa</span> · ${mgTime(g.dur)} · do cliente do LoL</h5>`+g.teams.map(team).join("");
 }
 function renderHist(){
   renderRanks(); renderPrendaHist();

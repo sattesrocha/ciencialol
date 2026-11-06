@@ -178,6 +178,12 @@ func main() {
 	bindAsync(w, "lcuImport", func(a []string) (any, error) { return lcuImport(arg(a, 0), arg(a, 1) == "true") })
 	bindAsync(w, "lcuRecent", func(a []string) (any, error) { return lcuRecent() })
 	bindAsync(w, "lcuMyBuilds", func(a []string) (any, error) { return lcuMyBuilds() })
+	bindAsync(w, "lcuGame", func(a []string) (any, error) {
+		if len(a) < 1 {
+			return nil, errors.New("partida inválida")
+		}
+		return lcuGame(a[0])
+	})
 	bindAsync(w, "lcuPhase", func(a []string) (any, error) { return lcuPhase() })
 	bindAsync(w, "roomSeal", func(a []string) (any, error) { return roomSeal(arg(a, 0)) })
 	bindAsync(w, "roomOpen", func(a []string) (any, error) { return roomOpen(arg(a, 0), arg(a, 1)) })
