@@ -3471,8 +3471,7 @@ function openPending(){
 $("#pendBtn").onclick=()=>openPending();
 $("#staffBtn").onclick=()=>{
   const adm=!!window.cloudPutAdmin;
-  openModal(`<div class="mpad mnarrow staffbox"><h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 8px">🔑 Chave da staff</h3>
-    <p class="note" style="margin:0 0 14px">Quem tem a chave publica e corrige builds na biblioteca de todo mundo e aprova as ciências enviadas. Sem a chave, o que você cria ou corrige fica neste PC (e dá pra enviar pra aprovação).</p>
+  openModal(`<div class="mpad mnarrow staffbox"><h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 16px">🔑 Chave da staff</h3>
     ${STAFF?`<div class="cstat cs-lib">✓ Este app é da staff${adm&&!S.staffCode?" (versão admin)":""}.</div>${S.staffCode?`<button class="btn" id="staffOff" style="margin-top:10px;color:var(--red)">Tirar a chave deste PC</button>`:""}`
       :`<div style="display:flex;gap:8px"><input id="staffIn" placeholder="CLOL-XXXX-XXXX-XXXX-XXXX" style="flex:1" autocomplete="off" spellcheck="false"><button class="btn gold" id="staffGo">Ativar</button></div><div id="staffMsg" class="note" style="margin-top:8px"></div>`}</div>`);
   if($("#staffGo")) $("#staffGo").onclick=async()=>{ const v=$("#staffIn").value.trim(); if(!v) return;
