@@ -178,6 +178,9 @@ func main() {
 	bindAsync(w, "lcuImport", func(a []string) (any, error) { return lcuImport(arg(a, 0), arg(a, 1) == "true") })
 	bindAsync(w, "lcuRecent", func(a []string) (any, error) { return lcuRecent() })
 	bindAsync(w, "lcuMyBuilds", func(a []string) (any, error) { return lcuMyBuilds() })
+	bindAsync(w, "staffCheck", func(a []string) (any, error) { return staffCheck(arg(a, 0)), nil })
+	bindAsync(w, "staffSign", func(a []string) (any, error) { return staffSign(arg(a, 0), arg(a, 1)) })
+	bindAsync(w, "staffVerify", func(a []string) (any, error) { return staffVerify(arg(a, 0)) })
 	bindAsync(w, "lcuGame", func(a []string) (any, error) {
 		if len(a) < 1 {
 			return nil, errors.New("partida inválida")

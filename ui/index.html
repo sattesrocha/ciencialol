@@ -662,6 +662,15 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 .mg-note{color:var(--muted);font-size:12.5px;padding:12px 14px;border:1px dashed var(--line2);border-radius:10px;margin-top:6px}
 .mg-team-w h5 .t{color:var(--teal)} .mg-team-l h5 .t{color:var(--red)}
 .mback{margin:0 0 10px}
+.cstat{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0}
+.cstat.cs-lib{color:var(--teal);border-color:rgba(10,200,185,.35)} .cstat.cs-pend{color:var(--gold2);border-color:var(--gold3)} .cstat.cs-rej{color:var(--red);border-color:rgba(232,64,87,.35)}
+.pend{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 14px;margin-bottom:8px}
+.pend .pl{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.pend .pl .icon{width:44px;height:44px;border-radius:10px;flex:none}
+.pend .mut{color:var(--muted);font-size:12.5px;margin-top:2px}
+.pend .pb{display:flex;gap:6px;flex:none}
+#pendBtn.gold-o{border-color:var(--gold);color:var(--gold2)}
+.cchip{font-size:11px;margin-left:4px}
 .hrow .date{color:var(--muted);font-size:12px}
 .hrow .picks{display:flex;gap:8px;flex-wrap:wrap}
 .hpick{display:flex;align-items:center;gap:7px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:4px 9px 4px 4px;font-size:12.5px}
@@ -918,6 +927,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
       <div class="head">
         <div><h2>Biblioteca</h2><p id="libCount"></p></div>
         <div style="display:flex;gap:10px;align-items:center"><button class="btn" id="libRefresh" title="Buscar agora as novidades do grupo no Drive"><span class="ri">⟳</span> Atualizar</button>
+        <button class="btn staffonly" id="pendBtn" style="display:none">📥 Pendentes <b id="pendN"></b></button>
         <button class="btn gold" id="newCiencia">+ Nova ciência</button></div>
       </div>
       <div class="toolbar">
@@ -935,7 +945,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
       <div class="adm" id="admBox"></div>
     </section>
     <section class="view" id="v-ajuda">
-      <div class="head"><div><h2>Ajuda</h2><p>Dúvidas comuns sobre o Ciência LOL.</p></div></div>
+      <div class="head"><div><h2>Ajuda</h2><p>Dúvidas comuns sobre o Ciência LOL.</p></div><button class="btn ghost sm" id="staffBtn" title="Chave da staff">🔑 Staff</button></div>
       <div class="help">
         <div class="card hcard">
           <div class="hicon">🛡️</div>
@@ -1231,7 +1241,7 @@ function mergeLikes(src){
       if(!D[nm] || ts>(D[nm][1]||0)){ D[nm]=[val,ts]; ch=true; } } }
   return ch;
 }
-function mergeOverrides(src){
+function mergeOverrides(src, trusted){
   if(!src||typeof src!=="object") return false; S.overrides=S.overrides||{}; let ch=false;
   const base=new Set(window.CIENCIAS_BASE.map(c=>c.id)); const st=v=>String(v??"").slice(0,300);
   for(const [id,o] of Object.entries(src)){ if(!base.has(id)||!o||typeof o!=="object") continue;
@@ -1240,8 +1250,77 @@ function mergeOverrides(src){
       ideia:st(o.ideia).slice(0,600), build:(Array.isArray(o.build)?o.build:[]).slice(0,12).map(st),
       roles:(Array.isArray(o.roles)?o.roles:[]).filter(r=>SOLO.includes(r)), ...(o.lib==="flb"||o.lib==="vinny"?{lib:o.lib}:{}), ...(o.vb ? { vb: FLB.reSanitize(o.vb) || undefined } : {}) };
     if(!S.overrides[id].del && !S.overrides[id].roles.length) delete S.overrides[id].roles;
+    if(!trusted) S.overrides[id].loc=1; // veio de arquivo importado: vale só neste PC
     ch=true; }
   return ch;
+}
+// ---- trava da biblioteca: só a staff publica na nuvem (tudo assinado) ----
+// S.lib guarda os registros assinados: c = ciências da biblioteca, o = correções de builds da base,
+// r = envios recusados. Os apps só aceitam da nuvem o que tem assinatura válida da staff.
+let STAFF=false;
+const libRecs = () => (S.lib = S.lib || {c:{},o:{},r:{}});
+const recObj = r => { try{ return JSON.parse(r.d); }catch(e){ return null; } };
+function applyRec(o){
+  if(!o || !o.id) return false; const ts=+o.ts||0;
+  if(o.t==="c"){
+    S.customDel=S.customDel||{}; const i=S.custom.findIndex(x=>x.id===o.id);
+    if(o.del){ if(i>-1 && (S.custom[i].ts||0)<=ts){ S.custom.splice(i,1); return true; } return false; }
+    if((S.customDel[o.id]||0) >= ts) return false;              // apagou neste PC depois
+    const c=sanitizeCustom({...o.c, id:o.id, ts}); if(!c) return false;
+    if(i>-1 && (S.custom[i].ts||0) >= ts){ if((S.custom[i].ts||0)===ts && !S.custom[i].ap){ S.custom[i].ap=1; return true; } return false; } // tem versão mais nova (ou a mesma) neste PC
+    c.ap=1; if(i>-1) S.custom[i]=c; else S.custom.push(c); return true;
+  }
+  if(o.t==="o"){
+    S.overrides=S.overrides||{}; const cur=S.overrides[o.id];
+    if(cur && cur.loc && (cur.ts||0) >= ts) return false;        // correção local mais nova
+    if(o.del){ if(cur){ delete S.overrides[o.id]; return true; } return false; }
+    const keep={...S.overrides}; delete keep[o.id]; S.overrides=keep;
+    mergeOverrides({[o.id]:{...o.o, ts}}, true); return true;
+  }
+  return o.t==="r";
+}
+async function libMerge(list){
+  const L=libRecs(), cand=[];
+  for(const r of list){ if(!r || typeof r.d!=="string" || typeof r.s!=="string" || r.d.length>200000) continue;
+    const o=recObj(r); if(!o || !["c","o","r"].includes(o.t) || typeof o.id!=="string" || futuro(o.ts)) continue;
+    const ex=L[o.t][o.id]; const eo=ex&&recObj(ex); if(eo && (+eo.ts||0) >= (+o.ts||0)) continue;
+    if(cand.some(x=>x.o.t===o.t && x.o.id===o.id && (+x.o.ts||0)>=(+o.ts||0))) continue;
+    cand.push({r,o}); }
+  if(!cand.length || !window.staffVerify) return false;
+  let ok=[]; try{ ok=await window.staffVerify(JSON.stringify(cand.map(x=>({d:x.r.d,s:x.r.s})))); }catch(e){ return false; }
+  let ch=false;
+  cand.forEach((x,i)=>{ if(!ok[i]) return; const ex=recObj(L[x.o.t][x.o.id]||{d:"null"}); if(ex && (+ex.ts||0) >= (+x.o.ts||0)) return;
+    L[x.o.t][x.o.id]={d:x.r.d, s:x.r.s}; applyRec(x.o); ch=true; });
+  return ch;
+}
+const libList = lib => !lib || typeof lib!=="object" ? [] : ["c","o","r"].flatMap(t=>Object.values(lib[t]||{}));
+// staff assina e publica
+async function staffPublish(o){
+  if(!STAFF || !window.staffSign) throw new Error("só a staff pode publicar na biblioteca");
+  const d=JSON.stringify(o); const sg=await window.staffSign(S.staffCode||"", d);
+  libRecs()[o.t][o.id]={d, s:sg}; applyRec(o); save(); if(typeof G!=="undefined" && G.push) G.push(); return true;
+}
+const cleanC = c => { const x={...c}; delete x.ap; delete x.remote; return x; };
+// situação de uma ciência criada (pra mostrar na Biblioteca)
+function cStatus(c){
+  if(!c || !c.custom) return "";
+  const L=libRecs(), lr=recObj(L.c[c.id]||{d:"null"}), rj=recObj(L.r[c.id]||{d:"null"});
+  if(lr && !lr.del) return (+lr.ts||0) >= (c.ts||0) ? "lib" : ((S.subs||{})[c.id] ? "pend" : "libloc");
+  if(rj && (+rj.ts||0) >= (c.ts||0)) return "rej";
+  return (S.subs||{})[c.id] ? "pend" : "loc";
+}
+const C_STATUS = { lib:["📚","Na biblioteca de todos"], libloc:["✏️","Na biblioteca, com uma edição só neste PC"], pend:["⏳","Aguardando aprovação da staff"], rej:["✗","Recusada pela staff (só neste PC)"], loc:["💻","Só neste PC"] };
+async function staffInit(){
+  STAFF=false;
+  try{ if(window.staffCheck) STAFF = !!(await window.staffCheck(S.staffCode||"")); }catch(e){}
+  document.documentElement.classList.toggle("staff", STAFF);
+  if(STAFF && !S.libMig){ // primeira vez como staff: assina o que já existe (biblioteca do teste fechado)
+    try{ const L=libRecs();
+      for(const c of S.custom.slice()){ if(!L.c[c.id]) await staffPublish({t:"c", id:c.id, ts:c.ts||Date.now(), c:cleanC(c)}); }
+      for(const [id,o] of Object.entries(S.overrides||{})){ if(o && !o.loc && !L.o[id]) await staffPublish(o.del?{t:"o",id,ts:o.ts||Date.now(),del:1}:{t:"o",id,ts:o.ts||Date.now(),o}); }
+      S.libMig=Date.now(); save();
+    }catch(e){ console.warn(e); }
+  }
 }
 // ---- comentários (sincronizam na sala; apagar = marcação, pra propagar) ----
 const commentsOf = id => Object.entries((S.comments||{})[id]||{}).filter(([k,c])=>c&&!c.del&&c.text).map(([k,c])=>({k,...c})).sort((a,b)=>a.ts-b.ts);
@@ -2136,7 +2215,7 @@ const R = {
     // removido pelo anfitrião: ignora tudo até a pessoa pedir pra entrar de novo
     if(this.kicked[m.id] && m.type!=="join") return;
     if(m.type==="join") delete this.kicked[m.id];
-    if(m.type==="sync"){ const a=mergeLikes(m.likes), b=mergeOverrides(m.ov), c2=mergeComments(m.cm), d=mergeCustoms(m.cu); if(a||b||c2||d){ save(); this.publish(); refreshLibIfOpen(); if(current) renderResults(false); } return; }
+    if(m.type==="sync"){ const a=mergeLikes(m.likes), b=false, c2=mergeComments(m.cm), d=mergeCustoms(m.cu); if(a||b||c2||d){ save(); this.publish(); refreshLibIfOpen(); if(current) renderResults(false); } return; }
     let mem = this.members.find(x=>x.id===m.id);
     const name = cleanName(m.name) || (mem ? mem.name : "Convidado");
     const role = ["any",...SOLO].includes(m.role) ? m.role : "any";
@@ -2293,7 +2372,7 @@ const R = {
       mq.opts.onconnect = () => { mq.subscribe(base+"/state"); mq.subscribe(base+"/sync"); if(gotState) this.send({type:"join"}); };
       mq.on((t,p,ret)=>{
         if(t===base+"/sync" && this.mq===mq){ let o; try{ o=JSON.parse(p); }catch(e){ return; } if(!o) return;
-          const a=mergeLikes(o.likes), b=mergeOverrides(o.ov), c2=mergeComments(o.cm), d=mergeCustoms(o.cu);
+          const a=mergeLikes(o.likes), b=false, c2=mergeComments(o.cm), d=mergeCustoms(o.cu);
           if(a||b||c2||d){ save(); refreshLibIfOpen(); if(current && !busy) renderResults(false); } return; }
         if(t!==base+"/state" || this.mq!==mq) return; let o; try{ o=JSON.parse(p); }catch(e){ return; }
         if(o.closed){ if(gotState){ this.leave(true); this.forget(); toast("O anfitrião fechou a sala"); } else if(k===list.length-1){ this.leave(true); this.forget(); toast(`A sala ${code} foi fechada.`); } return; }
@@ -2322,7 +2401,7 @@ const R = {
   onState(o, retained){
     if(Array.isArray(o.kicked) && o.kicked.includes(this.me.id) && !retained){
       this.leave(true); this.forget(); toast("O anfitrião te removeu da sala. Dá pra entrar de novo com o código."); return; }
-    if(o.likes||o.ov||o.cm||o.cu){ const a=mergeLikes(o.likes), b=mergeOverrides(o.ov), c2=mergeComments(o.cm), d=mergeCustoms(o.cu); if(a||b||c2||d){ save(); refreshLibIfOpen(); if(current && !busy) renderResults(false); } }
+    if(o.likes||o.ov||o.cm||o.cu){ const a=mergeLikes(o.likes), b=false, c2=mergeComments(o.cm), d=mergeCustoms(o.cu); if(a||b||c2||d){ save(); refreshLibIfOpen(); if(current && !busy) renderResults(false); } }
     this.lastState = o; this.lastSeenAt = Date.now();
     { const k = o.kind==="free" ? "free" : "ciencia"; if(k!==this.kind){ this.kind=k; this.remember(); }
       const tab = k==="free" ? "free" : "online"; if(uiMode!==tab){ uiMode=tab; tabSeg(tab); renderOnline(true); } }
@@ -2892,7 +2971,7 @@ function renderLib(){
       <div style="min-width:0"><h5>${esc(c.nome)}${c.syn&&synPartner(c)?'<span class="custom-badge syn" title="Sinergia com '+esc(synPartner(c).champ)+'">🤝</span>':""}${c.custom?`<span class="custom-badge">${(!c.by||low(c.by)===low(meName()))?"sua":"de "+esc(c.by)}</span>`:""}</h5>
       <div class="meta">${esc(c.champ)}${c.duo?" + "+esc(c.champ2):""}</div>
       <div class="roles">${c.roles.map(rolePill).join("")}</div></div>
-      <span class="chips2">${S.favs.includes(c.id)?'<span class="fav" title="Favorita">★</span>':""}${c.fixedTs?'<span class="fixed" title="Build corrigida por '+esc(c.fixedBy||"um jogador")+'">✏️</span>':""}${r.w+r.l?`<span class="rec" title="Seus resultados com essa ciência"><span class="g">${r.w}V</span> <span class="r">${r.l}D</span></span>`:""}${commentsOf(c.id).length?`<span class="cmchip" title="${commentsOf(c.id).length} comentário(s)">💬 ${commentsOf(c.id).length}</span>`:""}${likeChip(c.id)}</span>
+      <span class="chips2">${c.custom&&cStatus(c)!=="lib"?`<span class="cchip" title="${C_STATUS[cStatus(c)][1]}">${C_STATUS[cStatus(c)][0]}</span>`:""}${S.favs.includes(c.id)?'<span class="fav" title="Favorita">★</span>':""}${c.fixedTs?'<span class="fixed" title="Build corrigida por '+esc(c.fixedBy||"um jogador")+'">✏️</span>':""}${r.w+r.l?`<span class="rec" title="Seus resultados com essa ciência"><span class="g">${r.w}V</span> <span class="r">${r.l}D</span></span>`:""}${commentsOf(c.id).length?`<span class="cmchip" title="${commentsOf(c.id).length} comentário(s)">💬 ${commentsOf(c.id).length}</span>`:""}${likeChip(c.id)}</span>
     </button>`;}).join("") : `<div class="empty" style="grid-column:1/-1">Nada encontrado.</div>`;
 }
 $("#q").oninput=renderLib;
@@ -2978,7 +3057,8 @@ function openDetail(id){
       ${likesOf(id).length?`<div class="likedby">❤ Curtido por ${esc(likesOf(id).join(", "))}</div>`:""}
       ${synPartner(c)?`<div class="synref">🤝 <b>Sinergia</b> com <a data-detail="${esc(synPartner(c).id)}">${esc(synPartner(c).nome)}</a> (${esc(synPartner(c).champ)}). Quando os dois caem juntos na roleta, é a dupla da guia.</div>`:""}
       ${c.flbRef?`<div class="flbref">🎮 Build de <b>${esc(c.flbRef.author||"?")}</b>${c.flbRef.patch?` · patch ${esc(c.flbRef.patch)}`:""} · <a data-open="${esc(c.flbRef.url)}">ver a guia completa no site ↗</a></div>`:""}
-      ${c.fixedTs?`<div class="fixednote">✏️ Build corrigida por <b>${esc(c.fixedBy||"um jogador")}</b> em ${new Date(c.fixedTs).toLocaleDateString("pt-BR")}</div>`:""}
+      ${c.fixedTs?`<div class="fixednote">✏️ Build corrigida por <b>${esc(c.fixedBy||"um jogador")}</b> em ${new Date(c.fixedTs).toLocaleDateString("pt-BR")}${((S.overrides||{})[c.id]||{}).loc?" · <b>só neste PC</b>":""}</div>`:""}
+      ${c.custom?(()=>{ const st=cStatus(c), [ic,tx]=C_STATUS[st]; return `<div class="cstat cs-${st}">${ic} ${tx}${(st==="loc"||st==="rej"||st==="libloc")&&!STAFF?` <button class="btn sm" id="subBtn">📤 Enviar pra aprovação</button>`:""}${st==="pend"&&!STAFF?` <button class="btn sm ghost" id="unsubBtn">Cancelar envio</button>`:""}</div>`; })():""}
       <div style="color:var(--muted)">${esc(c.champ)}${c.duo?" + "+esc(c.champ2):""} ${(()=>{ const g=record(id,"all"); return (r.w+r.l?` · você: <span class="res-w">${r.w}V</span> / <span class="res-l">${r.l}D</span>`:"") + (g.w+g.l>r.w+r.l?` · grupo: <span class="res-w">${g.w}V</span> / <span class="res-l">${g.l}D</span>`:""); })()}</div>
       ${c.vb?`<div id="vbBuild" class="flbbuild"></div>`:""}
       <div class="dgrid" ${c.vb?'style="grid-template-columns:1fr"':""}>
@@ -3015,8 +3095,17 @@ function openDetail(id){
   $("#favBtn").onclick=()=>{ S.favs = fav ? S.favs.filter(x=>x!==id) : [...S.favs,id]; S.pts=Date.now(); save(); openDetail(id); };
   if(c.vb && $("#vbBuild")) FLBView.renderBuildObj($("#vbBuild"), c.vb, c.champ);
   if($("#fixBtn")) $("#fixBtn").onclick=()=>openFix(c);
-  if($("#unfixBtn")) $("#unfixBtn").onclick=()=>{ S.overrides=S.overrides||{}; S.overrides[id]={del:true,ts:Date.now(),by:meName()}; save(); R.shareSync&&R.shareSync(); toast("Build original restaurada"); openDetail(id); };
-  if(c.custom){ $("#editBtn").onclick=()=>openForm(c); $("#delBtn").onclick=async()=>{ if(await uiConfirm("Excluir essa ciência?\n\nEla some pra todos, na sala e na nuvem.", {ok:"Excluir", danger:true})){ S.custom=S.custom.filter(x=>x.id!==id); S.customDel=S.customDel||{}; S.customDel[id]=Date.now(); save(); R.shareSync&&R.shareSync(); closeModal(); toast("Ciência excluída"); } }; }
+  if($("#unfixBtn")) $("#unfixBtn").onclick=async()=>{ S.overrides=S.overrides||{};
+    if(STAFF){ try{ await staffPublish({t:"o", id, ts:Date.now(), del:1}); }catch(e){ toast("Não deu pra publicar: "+(e.message||e)); return; } toast("Build original restaurada pra todos"); }
+    else { delete S.overrides[id]; const r=recObj(libRecs().o[id]||{d:"null"}); if(r) applyRec(r); save(); toast("Correção deste PC desfeita"); }
+    openDetail(id); };
+  if($("#subBtn")) $("#subBtn").onclick=()=>{ S.subs=S.subs||{}; S.subs[id]=Date.now(); save(); G.push&&G.push(); toast("Enviada pra aprovação ⏳"); openDetail(id); };
+  if($("#unsubBtn")) $("#unsubBtn").onclick=()=>{ if(S.subs) delete S.subs[id]; save(); G.push&&G.push(); toast("Envio cancelado"); openDetail(id); };
+  if(c.custom){ $("#editBtn").onclick=()=>openForm(c); $("#delBtn").onclick=async()=>{ const inLib=!!libRecs().c[id];
+    if(await uiConfirm(STAFF&&inLib ? "Excluir essa ciência?\n\nEla sai da biblioteca de todos." : inLib ? "Tirar essa ciência deste PC?\n\nEla continua na biblioteca dos outros (só a staff pode excluir de lá)." : "Excluir essa ciência?", {ok:"Excluir", danger:true})){
+      const now=Date.now(); S.custom=S.custom.filter(x=>x.id!==id); S.customDel=S.customDel||{}; S.customDel[id]=now; if(S.subs) delete S.subs[id]; save();
+      if(STAFF && inLib){ try{ await staffPublish({t:"c", id, ts:now, del:1}); }catch(e){} }
+      R.shareSync&&R.shareSync(); closeModal(); toast("Ciência excluída"); } }; }
 }
 function openEmbed(p, id){
   const c=byId(id);
@@ -3144,7 +3233,13 @@ function openForm(c, pre){
     if(preId) obj.id = preId;
     if(adoptId) S.hiddenDemo=[...new Set([...(S.hiddenDemo||[]), adoptId])];
     obj.ts = Date.now(); obj.by = (c && c.by) || meName();
-    S.custom = c ? S.custom.map(x=>x.id===c.id?obj:x) : [...S.custom,obj]; save(); R.shareSync&&R.shareSync(); toast("Ciência salva!");
+    S.custom = c ? S.custom.map(x=>x.id===c.id?obj:x) : [...S.custom,obj]; save(); R.shareSync&&R.shareSync();
+    if(STAFF){ try{ await staffPublish({t:"c", id:obj.id, ts:obj.ts, c:cleanC(obj)}); toast("Ciência salva e publicada na biblioteca 📚"); }catch(e){ toast("Ciência salva, mas não deu pra publicar: "+(e.message||e)); } }
+    else {
+      const ask = await uiConfirm(c ? "Ciência salva neste PC.\n\nQuer enviar esta versão pra biblioteca de todo mundo? Alguém da staff precisa aprovar antes." : "Ciência salva neste PC 🧪\n\nQuer enviar pra biblioteca de todo mundo? Alguém da staff precisa aprovar. Enquanto isso, ela já fica pra você usar aqui.", {ok:"Enviar pra aprovação", cancel:"Deixar só neste PC", icon:"📚"});
+      S.subs=S.subs||{}; if(ask) S.subs[obj.id]=obj.ts; else delete S.subs[obj.id]; save(); G.push&&G.push();
+      toast(ask ? "Enviada pra aprovação ⏳" : "Ciência salva só neste PC 💻");
+    }
     if(duoNext){ const nx = { ...duoNext, syn:{ g:syn.g, with:obj.id } }; openForm(null, nx); toast(`Agora a do ${nx.champ} 🤝`); return; }
     if(c) openDetail(obj.id); else { closeModal(); $(".nav button[data-v=biblioteca]").click(); }
   };
@@ -3181,8 +3276,10 @@ function openFix(c){
     if(!roles.length){ toast("Marque pelo menos uma função"); return; }
     const b=await B.read(); if(!b) return;
     S.overrides=S.overrides||{};
-    S.overrides[c.id]={ts:Date.now(), by:meName(), roles, build:b.build, runas:b.runas, ideia:$("#xIdeia").value.trim(), ...(b.vb?{vb:b.vb}:{})};
-    save(); R.shareSync&&R.shareSync(); toast("Build salva ✏️"); openDetail(c.id);
+    const ov={ts:Date.now(), by:meName(), roles, build:b.build, runas:b.runas, ideia:$("#xIdeia").value.trim(), ...(b.vb?{vb:b.vb}:{})};
+    if(STAFF){ try{ await staffPublish({t:"o", id:c.id, ts:ov.ts, o:ov}); toast("Build salva e publicada pra todos ✏️"); }catch(e){ toast("Não deu pra publicar: "+(e.message||e)); } }
+    else { S.overrides[c.id]={...ov, loc:1}; save(); toast("Build salva só neste PC ✏️ (só a staff muda a biblioteca de todos)", 4500); }
+    openDetail(c.id);
   };
 }
 
@@ -3346,6 +3443,38 @@ async function loadMatchFull(gid, d){
         <td class="it">${p.items.map(x=>x?xIco(D.itemIdInfo(x)):`<span class="xi"></span>`).join("")}</td></tr>`; }).join("")}</table></div>`; };
   box.innerHTML=`<h5><span class="t">Partida completa</span> · ${mgTime(g.dur)} · do cliente do LoL</h5>`+g.teams.map(team).join("");
 }
+// envios dos usuários esperando a staff
+function pendingList(){ const P=(typeof G!=="undefined"&&G.pending)||{}; const L=libRecs();
+  return Object.values(P).filter(c=>{ const lr=recObj(L.c[c.id]||{d:"null"}), rj=recObj(L.r[c.id]||{d:"null"});
+    return !(lr && (+lr.ts||0)>=c.ts) && !(rj && (+rj.ts||0)>=c.ts); }).sort((a,b)=>b.ts-a.ts); }
+function refreshPendBtn(){ const b=$("#pendBtn"); if(!b) return; const n=STAFF?pendingList().length:0; b.style.display=STAFF?"":"none"; $("#pendN").textContent=n?`(${n})`:""; b.classList.toggle("gold-o", n>0); }
+function openPending(){
+  const list=pendingList();
+  openModal(`<div class="pendwrap"><h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 4px">📥 Ciências esperando aprovação</h3>
+    <p class="note" style="margin:0 0 14px">Aprovadas entram na biblioteca de todo mundo. Recusadas continuam só no PC de quem criou.</p>
+    ${list.length?list.map(c=>`<div class="pend card"><div class="pl">${iconDiv(c.champ)}<div><b>${esc(c.nome)}</b><div class="mut">${esc(c.champ)} · ${c.roles.map(r=>ROLES[r]).join(", ")} · por <b>${esc(c.by||"?")}</b> · ${new Date(c.ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}${libRecs().c[c.id]?" · <i>atualização de uma que já está na biblioteca</i>":""}</div>
+      ${c.runas&&c.runas!=="—"?`<div class="mut">⚡ ${esc(c.runas)}</div>`:""}${c.build.length?`<div class="mut">🛒 ${c.build.map(esc).join(" › ")}</div>`:""}${c.ideia?`<div class="mut" style="margin-top:4px">💡 ${esc(c.ideia)}</div>`:""}</div></div>
+      <div class="pb"><button class="btn sm gold" data-pok="${esc(c.id)}">✓ Aprovar</button><button class="btn sm" data-pno="${esc(c.id)}" style="color:var(--red)">✗ Recusar</button></div></div>`).join("")
+      : `<div class="empty">Nada esperando aprovação 🎉</div>`}</div>`);
+  $("#modal .pendwrap").onclick=async e=>{ const ok=e.target.closest("[data-pok]"), no=e.target.closest("[data-pno]"); if(!ok&&!no) return;
+    const id=(ok||no).dataset[ok?"pok":"pno"]; const c=(G.pending||{})[id]; if(!c) return; (ok||no).disabled=true;
+    try{ if(ok) await staffPublish({t:"c", id, ts:c.ts, c:cleanC(c)}); else await staffPublish({t:"r", id, ts:c.ts});
+      toast(ok?`📚 ${c.nome} entrou na biblioteca`:`Recusada: ${c.nome}`); }catch(err){ toast("Não deu: "+(err.message||err)); }
+    refreshPendBtn(); refreshLibIfOpen(); openPending(); };
+}
+$("#pendBtn").onclick=()=>openPending();
+$("#staffBtn").onclick=()=>{
+  const adm=!!window.cloudPutAdmin;
+  openModal(`<h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 6px">🔑 Chave da staff</h3>
+    <p class="note" style="margin:0 0 14px">Quem tem a chave publica e corrige builds na biblioteca de todo mundo e aprova as ciências enviadas. Sem a chave, o que você cria ou corrige fica neste PC (e dá pra enviar pra aprovação).</p>
+    ${STAFF?`<div class="cstat cs-lib">✓ Este app é da staff${adm&&!S.staffCode?" (versão admin)":""}.</div>${S.staffCode?`<button class="btn" id="staffOff" style="margin-top:10px;color:var(--red)">Tirar a chave deste PC</button>`:""}`
+      :`<div style="display:flex;gap:8px"><input id="staffIn" placeholder="CLOL-XXXX-XXXX-XXXX-XXXX" style="flex:1" autocomplete="off" spellcheck="false"><button class="btn gold" id="staffGo">Ativar</button></div><div id="staffMsg" class="note" style="margin-top:8px"></div>`}`);
+  if($("#staffGo")) $("#staffGo").onclick=async()=>{ const v=$("#staffIn").value.trim(); if(!v) return;
+    let ok=false; try{ ok=!!(window.staffCheck && await window.staffCheck(v)); }catch(e){}
+    if(!ok){ $("#staffMsg").innerHTML='<span class="err">Chave errada.</span>'; return; }
+    S.staffCode=v; save(); await staffInit(); toast("🔑 Chave da staff ativada"); refreshPendBtn(); G.push&&G.push(); $("#staffBtn").click(); };
+  if($("#staffOff")) $("#staffOff").onclick=async()=>{ delete S.staffCode; save(); await staffInit(); refreshPendBtn(); toast("Chave removida deste PC"); $("#staffBtn").click(); };
+};
 function renderHist(){
   renderRanks(); renderPrendaHist();
   const names=[...new Set(S.history.flatMap(d=>d.picks.map(p=>p.player)).filter(Boolean))];
@@ -3699,7 +3828,10 @@ const G = {
   },
   key(){ const n=String(S.myName||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
     return n ? n.replace(/[^a-z0-9_-]/g,"_").slice(0,18) : ""; },
-  sharedPayload(){ return JSON.stringify({ v:1, likes:S.likes||{}, ov:S.overrides||{}, cm:S.comments||{}, cu:customPayload() }); },
+  sharedPayload(){ const subs=S.subs||{};
+    return JSON.stringify({ v:2, likes:S.likes||{}, cm:S.comments||{}, cu:{list:S.custom.filter(c=>!c.ap).map(cleanC), del:S.customDel||{}},
+      sub:S.custom.filter(c=>subs[c.id]).map(c=>({...cleanC(c), by:c.by||meName()})).slice(0,50),
+      ...(STAFF?{lib:libRecs()}:{}) }); },
   minePayload(){
     const hist = S.history.map(d=>({ts:d.ts, room:d.room||null, picks:(d.picks||[]).map(p=>({player:p.player, role:p.role, id:p.id, part:p.part, res:p.res||null, ...(p.st?{st:p.st}:{})}))}));
     const cs={}; hist.forEach(d=>d.picks.forEach(p=>{ const c=byId(p.id); if(c && !c.custom && !CIENCIAS_BASE.some(x=>x.id===c.id) && !flbList().some(x=>x.id===c.id)) cs[c.id]=c; }));
@@ -3711,13 +3843,18 @@ const G = {
       const all = JSON.parse(await window.cloudGet() || "{}"); let ch=false;
       const k=this.key();
       if(all && all["c/main"]){ try{ const cf=JSON.parse(all["c/main"].dados||"null"); if(cf && JSON.stringify(cf)!==JSON.stringify(S.cfg||null)){ S.cfg=cf; applyCfg(); ch=true; } }catch(e){} }
+      const libIn=[]; const pend={};
       for(const [key,v] of Object.entries(all||{})){
         let o; try{ o=JSON.parse(v && v.dados || "null"); }catch(e){ continue; } if(!o || typeof o!=="object") continue;
         if(key.startsWith("c/")) continue;
-        if(key.startsWith("m/") && key!=="m/"+S.gid){ const a=mergeLikes(o.likes), b=mergeOverrides(o.ov), c2=mergeComments(o.cm), d=mergeCustoms(o.cu); ch = a||b||c2||d||ch; }
-        else if(key==="m/"+S.gid && !this.sentShared){ const d=mergeCustoms(o.cu); ch = d||ch; }
+        if(key.startsWith("m/")) libIn.push(...libList(o.lib));
+        if(key.startsWith("m/") && key!=="m/"+S.gid){ const a=mergeLikes(o.likes), c2=mergeComments(o.cm); ch = a||c2||ch;
+          (Array.isArray(o.sub)?o.sub:[]).slice(0,50).forEach(x=>{ const c=sanitizeCustom(x); if(c && (!pend[c.id] || pend[c.id].ts<c.ts)) pend[c.id]=c; }); }
+        else if(key==="m/"+S.gid && !this.sentShared){ const d=mergeCustoms(o.cu); ch = d||ch; } // reinstalou: volta as suas
         else if(k && key==="p/"+k){ ch = this.mergeMine(o) || ch; }
       }
+      ch = (await libMerge(libIn)) || ch;
+      this.pending = pend; if(STAFF) refreshPendBtn();
       this.pulled=true; this.pulledKey=k; this.status="on"; this.lastErr="";
       if(ch){ save(); refreshLibIfOpen(); if(R.mode==="host") R.publish(); if($("#v-historico") && $("#v-historico").classList.contains("on")) renderHist(); }
       this.lastCh=ch;
@@ -3766,7 +3903,7 @@ const G = {
 };
 
 /* ============ início ============ */
-(async()=>{ await loadAppState();
+(async()=>{ await loadAppState(); await staffInit();
   if(!S.extra) S.extra={};
   S.custom.forEach(c=>{ if(!c.ts) c.ts = 1; });
   syncOptInputs(S.opts); renderPlayers(); loadFlbLive(false); FLBDD.loadDD(); G.start();
