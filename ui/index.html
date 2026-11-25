@@ -3544,6 +3544,14 @@ async function renderCelular(){
           :`<div class="note" style="margin-top:12px">Não achei este PC numa rede local. Conecte no Wi-Fi ou no cabo e reabra esta aba.</div>`)
           :`<p class="note" style="margin:12px 0 0">Ao ligar, aparece um QR code pra abrir no celular. Na primeira vez, o Windows pode perguntar se libera o acesso na rede: escolha <b>Permitir</b> (redes privadas).</p>`}
       </div>
+      <div class="card cel-card" style="margin-top:16px"><h3>🔔 Avisos no celular (ntfy)</h3>
+        <label class="opt"><input type="checkbox" id="ntOn" ${inf.ntfy.on?"checked":""}><span class="sw"></span><span>${inf.ntfy.on?"Ligado":"Desligado"}<small>Notificação com botão Aceitar, mesmo com o celular bloqueado ou no 4G</small></span></label>
+        ${inf.ntfy.on?`<div class="cel-qr"><img src="${inf.ntfy.qr}" alt="QR code do ntfy"><div class="cel-links">
+            <b style="color:var(--text)">Uma vez só:</b><br>1. Instale o app <b>ntfy</b> no celular (Play Store, F-Droid ou App Store).<br>2. No Android, leia este QR code com a câmera. No iPhone, no app do ntfy toque em <b>+</b> e digite o tópico abaixo.<br>3. No Android, ligue <b>Entrega instantânea</b> nesse tópico (pra o aviso chegar na hora).
+            <code>${esc(inf.ntfy.topic)}</code>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" id="ntTest">📨 Mandar aviso de teste</button><button class="btn sm ghost" id="ntNew">🔄 Endereço novo</button><button class="btn sm ghost" id="ntAdv">Avançado</button></div>
+          </div></div>`:`<p class="note" style="margin:10px 0 0">Usa o app gratuito <b>ntfy</b> (sem conta e sem anúncio). Cada PC tem o seu endereço próprio.</p>`}
+      </div>
       <div class="card cel-card" style="margin-top:16px"><h3>🧪 Ciência sorteada</h3><div id="celCz"></div></div>
       <div class="card cel-card" style="margin-top:16px"><h3>📜 O que aconteceu</h3><div class="cel-log" id="celLog"></div></div>
     </div>
@@ -3559,6 +3567,17 @@ async function renderCelular(){
     </div>
   </div>`;
   $("#celOn").onchange=async e=>{ e.target.disabled=true; try{ await window.remoteEnable(e.target.checked?"1":"0"); }catch(err){ toast("Não deu pra ligar: "+(err.message||err), 6000); } renderCelular(); };
+  $("#ntOn").onchange=async e=>{ e.target.disabled=true; try{ await window.remoteNtfy(JSON.stringify({on:e.target.checked})); }catch(err){ toast("Não deu: "+(err.message||err), 6000); } renderCelular(); };
+  if($("#ntTest")) $("#ntTest").onclick=async e=>{ e.target.disabled=true; try{ await window.remoteNtfyTest(); toast("📨 Aviso enviado: confira o celular"); }catch(err){ toast("Não deu: "+(err.message||err), 7000); } e.target.disabled=false; };
+  if($("#ntNew")) $("#ntNew").onclick=async()=>{ if(await uiConfirm("Trocar o endereço dos avisos?\n\nO celular para de receber até ler o QR code novo.", {ok:"Trocar"})){ await window.remoteNtfy(JSON.stringify({on:true,newTopic:true})); renderCelular(); } };
+  if($("#ntAdv")) $("#ntAdv").onclick=()=>{ const n=CEL.inf.ntfy;
+    openModal(`<div class="mpad mnarrow"><h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 14px">Avançado (ntfy)</h3>
+      <label class="note">Servidor</label><input id="ntSrv" value="${esc(n.server)}" style="width:100%;margin:4px 0 12px" spellcheck="false">
+      <label class="note">Token de acesso (só se você tem conta no ntfy; fica só neste PC)</label><input id="ntTok" type="password" placeholder="${n.hasToken?"•••••• (salvo)":"vazio"}" style="width:100%;margin:4px 0 14px" autocomplete="off">
+      <div style="display:flex;gap:8px;justify-content:flex-end">${n.hasToken?`<button class="btn ghost" id="ntTokDel">Apagar token</button>`:""}<button class="btn gold" id="ntSave">Salvar</button></div></div>`);
+    const go=async body=>{ try{ await window.remoteNtfy(JSON.stringify({on:true,...body})); closeModal(); toast("Salvo"); renderCelular(); }catch(err){ toast("Não deu: "+(err.message||err), 6000); } };
+    $("#ntSave").onclick=()=>{ const b={server:$("#ntSrv").value}; if($("#ntTok").value) b.token=$("#ntTok").value; go(b); };
+    if($("#ntTokDel")) $("#ntTokDel").onclick=()=>go({token:""}); };
   if($("#celNew")) $("#celNew").onclick=async()=>{ if(await uiConfirm("Gerar link novo?\n\nO link antigo para de funcionar em todos os celulares; vai ser preciso ler o QR code de novo.", {ok:"Gerar"})){ await window.remoteNewToken(); renderCelular(); } };
   const saveA=async patch=>{ CEL.inf.view.auto={...CEL.inf.view.auto, ...patch}; try{ await window.remoteSetAuto(JSON.stringify(CEL.inf.view.auto)); }catch(e){ toast("Não deu pra salvar"); } renderCelular(); };
   document.querySelectorAll("[data-celk]").forEach(el=>el.onchange=()=>saveA({[el.dataset.celk]:el.checked}));

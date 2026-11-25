@@ -140,6 +140,7 @@ type rmConfig struct {
 	Port    int    `json:"port"`
 	Token   string `json:"token"`
 	Auto    rmAuto `json:"auto"`
+	Ntfy    rmNtfy `json:"ntfy"`
 }
 
 type remoteApp struct {
@@ -157,6 +158,12 @@ type remoteApp struct {
 	srv       *http.Server
 	loopOn    bool
 	fails     map[string][]time.Time // tentativas com token errado por IP
+	// avisos pelo ntfy
+	ntfyStop          context.CancelFunc
+	rcCode, pkCode    string // códigos de uso único dos botões da notificação
+	pkAction, pkChamp int
+	rcSeen            bool // já avisou desta fila
+	lastTurn          int  // última vez de banir/escolher avisada
 }
 
 var remote = &remoteApp{acted: map[int]time.Time{}, fails: map[string][]time.Time{}}
@@ -175,6 +182,11 @@ func remoteInit(dir string) {
 		r.cfg.Token = newRemoteToken()
 	}
 	r.save()
+	if r.cfg.Ntfy.On {
+		r.ntfyEnsureTopics()
+		r.save()
+		r.ntfyApply()
+	}
 	if r.cfg.Enabled {
 		if err := r.startServer(); err != nil {
 			r.addLog("Não deu pra ligar o controle pelo celular: " + err.Error())
@@ -341,7 +353,7 @@ func (r *remoteApp) active() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	a := r.cfg.Auto
-	return r.cfg.Enabled || a.AutoAccept || a.AutoSelect
+	return r.cfg.Enabled || a.AutoAccept || a.AutoSelect || r.cfg.Ntfy.On
 }
 
 func (r *remoteApp) ensureLoop() {
@@ -396,12 +408,16 @@ func (r *remoteApp) tick() {
 	}
 	if phase != r.lastPhase {
 		r.addLog("Fase: " + phaseName(phase))
+		r.mu.Lock()
 		if phase != "ChampSelect" {
-			r.mu.Lock()
 			r.acted = map[int]time.Time{}
 			r.imported = false
-			r.mu.Unlock()
+			r.pkCode, r.lastTurn = "", 0
 		}
+		if phase != "ReadyCheck" {
+			r.rcCode, r.rcSeen = "", false // a fila acabou: o botão da notificação deixa de valer
+		}
+		r.mu.Unlock()
 		r.lastPhase = phase
 	}
 
@@ -412,15 +428,35 @@ func (r *remoteApp) tick() {
 		var rc rmReady
 		if err := r.getJSON("/lol-matchmaking/v1/ready-check", &rc); err == nil {
 			v.ReadyCheck = &rc
+			r.mu.Lock()
+			first := !r.rcSeen && rc.PlayerResponse == "None" && rc.State == "InProgress"
+			if first {
+				r.rcSeen = true
+			}
+			r.mu.Unlock()
+			autoOK := false
 			if a.AutoAccept && rc.PlayerResponse == "None" && rc.State == "InProgress" {
 				if _, _, err := r.lcuDo("POST", "/lol-matchmaking/v1/ready-check/accept", nil); err == nil {
 					r.addLog("Automático: partida aceita")
+					autoOK = true
 				}
+			}
+			if first {
+				r.onReadyCheck(autoOK)
 			}
 		}
 	case "ChampSelect":
 		if cs, err := r.buildChampSelect(); err == nil {
 			v.ChampSelect = cs
+			if cs.MyAction != nil {
+				r.mu.Lock()
+				newTurn := cs.MyAction.ID != r.lastTurn
+				r.lastTurn = cs.MyAction.ID
+				r.mu.Unlock()
+				if newTurn {
+					r.onMyTurn(cs, a)
+				}
+			}
 			if a.AutoSelect {
 				r.autoSelect(cs, a)
 			}
@@ -540,6 +576,7 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 				verb = "baniu"
 			}
 			r.addLog("Automático: " + verb + " " + r.champName(id))
+			r.notify(ntfyMsg{Title: "Automático " + verb + " " + r.champName(id), Message: "Feito no LoL ✅", Priority: 3, Tags: []string{"robot"}})
 			if act.Type == "pick" {
 				r.afterPick(id)
 			}
@@ -608,7 +645,9 @@ func (r *remoteApp) importCiencia() error {
 	r.mu.Lock()
 	r.imported = true
 	r.mu.Unlock()
-	r.addLog(fmt.Sprintf("Build de %s no LoL — runas: %s · feitiços: %s · itens: %s", c.Nome, res.Runes, res.Spells, res.Items))
+	line := fmt.Sprintf("runas: %s · feitiços: %s · itens: %s", res.Runes, res.Spells, res.Items)
+	r.addLog("Build de " + c.Nome + " no LoL — " + line)
+	r.notify(ntfyMsg{Title: "Build de " + c.Nome + " no LoL ⚡", Message: line, Priority: 2})
 	return nil
 }
 
@@ -906,18 +945,19 @@ func localIPv4s() []string {
 }
 
 type rmInfo struct {
-	Enabled bool     `json:"enabled"`
-	Port    int      `json:"port"`
-	Links   []string `json:"links"`
-	QR      string   `json:"qr"` // data:image/png do primeiro link
-	View    rmView   `json:"view"`
+	Enabled bool       `json:"enabled"`
+	Port    int        `json:"port"`
+	Links   []string   `json:"links"`
+	QR      string     `json:"qr"` // data:image/png do primeiro link
+	View    rmView     `json:"view"`
+	Ntfy    rmNtfyInfo `json:"ntfy"`
 }
 
 func (r *remoteApp) info() rmInfo {
 	r.mu.RLock()
 	en, port, tok := r.cfg.Enabled, r.cfg.Port, r.cfg.Token
 	r.mu.RUnlock()
-	in := rmInfo{Enabled: en, Port: port, View: r.viewNow()}
+	in := rmInfo{Enabled: en, Port: port, View: r.viewNow(), Ntfy: r.ntfyInfo()}
 	if en {
 		for _, ip := range localIPv4s() {
 			in.Links = append(in.Links, fmt.Sprintf("http://%s:%d/?t=%s", ip, port, tok))

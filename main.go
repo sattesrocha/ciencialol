@@ -189,6 +189,14 @@ func main() {
 		}
 		return remote.setAuto(c), nil
 	})
+	bindAsync(w, "remoteNtfy", func(a []string) (any, error) {
+		var c rmNtfySet
+		if err := json.Unmarshal([]byte(arg(a, 0)), &c); err != nil {
+			return nil, errors.New("configuração inválida")
+		}
+		return remote.setNtfy(c)
+	})
+	bindAsync(w, "remoteNtfyTest", func(a []string) (any, error) { return true, remote.ntfyTest() })
 	bindAsync(w, "remoteSetCiencia", func(a []string) (any, error) {
 		var c *rmCiencia
 		if s := arg(a, 0); s != "" && s != "null" {
