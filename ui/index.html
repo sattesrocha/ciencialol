@@ -668,6 +668,35 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 .mg-note{color:var(--muted);font-size:12.5px;padding:12px 14px;border:1px dashed var(--line2);border-radius:10px;margin-top:6px}
 .mg-team-w h5 .t{color:var(--teal)} .mg-team-l h5 .t{color:var(--red)}
 .mback{margin:0 0 10px}
+/* aba Celular */
+.cel-grid{display:grid;grid-template-columns:minmax(300px,1fr) minmax(300px,1fr);gap:16px;align-items:start}
+@media (max-width:1050px){ .cel-grid{grid-template-columns:1fr} }
+.cel-card{padding:18px 20px}
+.cel-card h3{font-family:Cinzel,Georgia,serif;font-size:16px;color:var(--gold2);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+#celSt b{color:var(--text)}
+.cel-card .opt{margin-bottom:8px}
+.cel-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--red);margin-right:6px;vertical-align:1px}
+.cel-dot.on{background:var(--teal)}
+.cel-qr{display:flex;gap:18px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.cel-qr img{width:180px;height:180px;border-radius:12px;background:#fff;padding:8px;image-rendering:pixelated}
+.cel-links{flex:1;min-width:220px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.cel-links code{display:block;word-break:break-all;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:4px 0;color:var(--text);font-size:11.5px;user-select:all}
+.cel-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.cel-row:first-of-type{border-top:0}
+.cel-row input[type=number]{width:70px;height:34px;padding:0 8px;border-radius:8px}
+.cel-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.cel-chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:3px 10px 3px 3px;font-size:12.5px}
+.cel-chip .icon{width:24px;height:24px;border-radius:50%}
+.cel-chip i{font-style:normal;color:var(--gold2);font-size:11px}
+.cel-chip b{cursor:pointer;color:var(--muted);font-weight:400}
+.cel-chip b:hover{color:var(--red)}
+.cel-log{font:12px/1.55 ui-monospace,Consolas,monospace;color:var(--muted);white-space:pre-wrap;max-height:220px;overflow:auto}
+.cel-cz{display:flex;gap:12px;align-items:center}
+.cel-cz .icon{width:46px;height:46px;border-radius:10px}
+.cel-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;max-height:52vh;overflow:auto;margin-top:10px}
+.cel-pick div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);cursor:pointer;text-align:center}
+.cel-pick div:hover{color:var(--gold2)}
+.cel-pick .icon{width:52px;height:52px;border-radius:10px}
 .cstat{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0}
 .cstat.cs-lib{color:var(--teal);border-color:rgba(10,200,185,.35)} .cstat.cs-pend{color:var(--gold2);border-color:var(--gold3)} .cstat.cs-rej{color:var(--red);border-color:rgba(232,64,87,.35)}
 .pend{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 14px;margin-bottom:8px}
@@ -853,6 +882,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
       <button data-v="novidades" id="navNews"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.2 5.3L20 9l-4.4 3.8L17 18.5 12 15.6 7 18.5l1.4-5.7L4 9l5.8-.7z"/></svg>Novidades<i class="newsdot"></i></button>
       <button data-v="wallpaper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="m6 14 4-4 3 3 2-2 3 3"/></svg>Wallpaper</button>
       <button data-v="admin" id="navAdmin" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Admin</button>
+      <button data-v="celular" id="navCel" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></svg>Celular</button>
       <button data-v="ajuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .8c0 1.8-2.5 2.2-2.5 3.8"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>Ajuda</button>
     </nav>
     <div class="volbar" title="Volume do app">
@@ -949,6 +979,10 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
       <div class="head"><div><h2>Admin</h2><p>Só você vê esta aba. O que publicar aqui chega pra todos em até 1 minuto (ou na hora pelo ⟳ Atualizar), sem versão nova.</p></div>
         <button class="btn gold" id="admSave">📤 Publicar pra todos</button></div>
       <div class="adm" id="admBox"></div>
+    </section>
+    <section class="view" id="v-celular">
+      <div class="head"><div><h2>Celular</h2><p>Aceite a partida e escolha o campeão pelo celular.</p></div></div>
+      <div id="celBox"></div>
     </section>
     <section class="view" id="v-ajuda">
       <div class="head"><div><h2>Ajuda</h2><p>Dúvidas comuns sobre o Ciência LOL.</p></div><button class="btn ghost sm" id="staffBtn" title="Chave da staff">🔑 Staff</button></div>
@@ -1388,6 +1422,7 @@ document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   if(b.dataset.v==="biblioteca") renderLib(); if(b.dataset.v==="historico") renderHist();
   document.querySelectorAll("#v-wallpaper video").forEach(v=>{ try{ b.dataset.v==="wallpaper" ? v.play().catch(()=>{}) : v.pause(); }catch(e){} });
   if(typeof renderRoomList==="function"){ if(b.dataset.v==="sorteio" && !R.mode && $("#roomList")){ R.watchRooms(); } renderRoomList(); }
+  if(b.dataset.v==="celular") renderCelular(); else clearInterval(CEL.t);
   if(b.dataset.v==="novidades") markNewsRead(); if(b.dataset.v==="inicio") renderHeroStats(); if(b.dataset.v==="admin") renderAdmin();
 });
 document.addEventListener("click",e=>{ const a=e.target.closest("[data-open]"); if(a){ e.preventDefault(); bridge.open(a.dataset.open); }
@@ -3480,6 +3515,70 @@ $("#staffBtn").onclick=()=>{
     S.staffCode=v; save(); await staffInit(); toast("🔑 Chave da staff ativada"); refreshPendBtn(); G.push&&G.push(); $("#staffBtn").click(); };
   if($("#staffOff")) $("#staffOff").onclick=async()=>{ delete S.staffCode; save(); await staffInit(); refreshPendBtn(); toast("Chave removida deste PC"); $("#staffBtn").click(); };
 };
+// ---- aba Celular (controle remoto) ----
+const CEL={t:0, busy:false};
+function remoteCienciaKey(){ if(!current) return ""; const i=current.picks.findIndex(p=>isMine(p,current)); if(i<0) return ""; const p=current.picks[i]; return `${current.ts}|${p.id}|${cardChamp(p)}|${p.part||0}`; }
+let REMOTE_CZ="";
+async function syncRemoteCiencia(){
+  if(!window.remoteSetCiencia) return;
+  const k=remoteCienciaKey(); if(k===REMOTE_CZ) return; REMOTE_CZ=k;
+  if(!k){ try{ await window.remoteSetCiencia("null"); }catch(e){} return; }
+  const p=current.picks.find(p=>isMine(p,current)), c=byId(p.id), champ=cardChamp(p);
+  const ck=(CHAMPS.find(x=>x.id===cid(champ))||{}).key||0;
+  let payload="";
+  try{ const vb=lcuBuildOf(c, champ); if(vb){ const pl=await FLBDD.toLCU(vb, champ, `${c.nome}`.slice(0,75)); pl.flash=flashOf(p.player); if(pl.page||pl.spells||(pl.blocks||[]).length) payload=JSON.stringify(pl); } }catch(e){}
+  if(REMOTE_CZ!==k) return;
+  try{ await window.remoteSetCiencia(JSON.stringify({key:ck, champ, nome:c.nome, payload})); }catch(e){}
+}
+function celChip(key,i,list){ const c=CHAMP_BY_KEY[key]; return `<span class="cel-chip">${iconDiv(c?c.name:"?")}<i>${i+1}</i>${esc(c?c.name:"#"+key)}<b data-celrm="${list}:${i}" title="Tirar">✕</b></span>`; }
+async function renderCelular(){
+  if(!window.remoteInfo) return;
+  clearInterval(CEL.t); CEL.t=setInterval(()=>{ if($("#v-celular").classList.contains("on")) celRefresh(); else clearInterval(CEL.t); }, 1500);
+  let inf; try{ inf=await window.remoteInfo(); }catch(e){ $("#celBox").innerHTML=`<div class="empty">Não deu pra abrir: ${esc(e.message||e)}</div>`; return; }
+  CEL.inf=inf; const a=inf.view.auto||{};
+  $("#celBox").innerHTML=`<div class="cel-grid">
+    <div>
+      <div class="card cel-card"><h3>📱 Controle pelo celular</h3>
+        <label class="opt"><input type="checkbox" id="celOn" ${inf.enabled?"checked":""}><span class="sw"></span><span>${inf.enabled?"Ligado":"Desligado"}<small id="celSt"></small></span></label>
+        ${inf.enabled?(inf.links.length?`<div class="cel-qr"><img src="${inf.qr}" alt="QR code"><div class="cel-links">Aponte a câmera do celular pro QR code. Ele precisa estar no mesmo Wi-Fi (ou no Tailscale).${inf.links.map(l=>`<code>${esc(l)}</code>`).join("")}<button class="btn sm ghost" id="celNew" style="margin-top:6px">🔄 Gerar link novo</button></div></div>`
+          :`<div class="note" style="margin-top:12px">Não achei este PC numa rede local. Conecte no Wi-Fi ou no cabo e reabra esta aba.</div>`)
+          :`<p class="note" style="margin:12px 0 0">Ao ligar, aparece um QR code pra abrir no celular. Na primeira vez, o Windows pode perguntar se libera o acesso na rede: escolha <b>Permitir</b> (redes privadas).</p>`}
+      </div>
+      <div class="card cel-card" style="margin-top:16px"><h3>🧪 Ciência sorteada</h3><div id="celCz"></div></div>
+      <div class="card cel-card" style="margin-top:16px"><h3>📜 O que aconteceu</h3><div class="cel-log" id="celLog"></div></div>
+    </div>
+    <div class="card cel-card"><h3>🤖 Modo automático</h3>
+      <p class="note" style="margin:0 0 8px">Funciona mesmo sem o celular, com o app aberto.</p>
+      <label class="opt"><input type="checkbox" data-celk="autoAccept" ${a.autoAccept?"checked":""}><span class="sw"></span><span>Aceitar a partida sozinho<small>Assim que a fila estourar</small></span></label>
+      <label class="opt"><input type="checkbox" data-celk="autoSelect" ${a.autoSelect?"checked":""}><span class="sw"></span><span>Banir/escolher sozinho<small>Se você não agir até faltar o tempo abaixo</small></span></label>
+      <label class="opt"><input type="checkbox" data-celk="useCiencia" ${a.useCiencia?"checked":""}><span class="sw"></span><span>Campeão da ciência primeiro<small>O da sua carta sorteada vem antes da lista</small></span></label>
+      <label class="opt"><input type="checkbox" data-celk="autoImport" ${a.autoImport?"checked":""}><span class="sw"></span><span>Importar a build ao travar<small>Quando travar o campeão da ciência, a build vai pro LoL</small></span></label>
+      <label class="cel-row"><span>Agir quando faltar (segundos)</span><input type="number" min="1" max="60" id="celSec" value="${a.secondsLeft||8}"></label>
+      <div class="cel-row" style="display:block"><span>Bans, em ordem de prioridade</span><div class="cel-chips">${(a.banList||[]).map((k,i)=>celChip(k,i,"banList")).join("")||'<span class="note">vazio</span>'}</div><button class="btn sm" data-celadd="banList">+ adicionar ban</button></div>
+      <div class="cel-row" style="display:block"><span>Picks, em ordem de prioridade (se pegarem um, vai pro próximo)</span><div class="cel-chips">${(a.pickList||[]).map((k,i)=>celChip(k,i,"pickList")).join("")||'<span class="note">vazio</span>'}</div><button class="btn sm" data-celadd="pickList">+ adicionar pick</button></div>
+    </div>
+  </div>`;
+  $("#celOn").onchange=async e=>{ e.target.disabled=true; try{ await window.remoteEnable(e.target.checked?"1":"0"); }catch(err){ toast("Não deu pra ligar: "+(err.message||err), 6000); } renderCelular(); };
+  if($("#celNew")) $("#celNew").onclick=async()=>{ if(await uiConfirm("Gerar link novo?\n\nO link antigo para de funcionar em todos os celulares; vai ser preciso ler o QR code de novo.", {ok:"Gerar"})){ await window.remoteNewToken(); renderCelular(); } };
+  const saveA=async patch=>{ CEL.inf.view.auto={...CEL.inf.view.auto, ...patch}; try{ await window.remoteSetAuto(JSON.stringify(CEL.inf.view.auto)); }catch(e){ toast("Não deu pra salvar"); } renderCelular(); };
+  document.querySelectorAll("[data-celk]").forEach(el=>el.onchange=()=>saveA({[el.dataset.celk]:el.checked}));
+  $("#celSec").onchange=()=>saveA({secondsLeft:Math.max(1,Math.min(60,+$("#celSec").value||8))});
+  document.querySelectorAll("[data-celrm]").forEach(b=>b.onclick=()=>{ const [k,i]=b.dataset.celrm.split(":"); const l=[...(CEL.inf.view.auto[k]||[])]; l.splice(+i,1); saveA({[k]:l}); });
+  document.querySelectorAll("[data-celadd]").forEach(b=>b.onclick=()=>{ const k=b.dataset.celadd, have=new Set(CEL.inf.view.auto[k]||[]);
+    openModal(`<div class="mpad"><h3 style="font-family:Cinzel,Georgia,serif;color:var(--gold2);margin:0 0 12px">${k==="banList"?"Adicionar ban":"Adicionar pick"}</h3><input id="celQ" placeholder="Buscar campeão…" style="width:100%" autocomplete="off"><div class="cel-pick" id="celPick"></div></div>`);
+    const draw=()=>{ const q=low($("#celQ").value); $("#celPick").innerHTML=CHAMPS.filter(c=>!have.has(c.key) && (!q||low(c.name).includes(q))).map(c=>`<div data-celpk="${c.key}">${iconDiv(c.name)}<span>${esc(c.name)}</span></div>`).join(""); };
+    $("#celQ").oninput=draw; draw(); $("#celQ").focus();
+    $("#celPick").onclick=e=>{ const d=e.target.closest("[data-celpk]"); if(!d) return; closeModal(); saveA({[k]:[...(CEL.inf.view.auto[k]||[]), +d.dataset.celpk]}); }; });
+  celPaint(inf);
+}
+async function celRefresh(){ if(CEL.busy || !window.remoteInfo) return; CEL.busy=true; try{ const inf=await window.remoteInfo(); CEL.inf.view=inf.view; celPaint(inf); }catch(e){} CEL.busy=false; }
+function celPaint(inf){
+  const v=inf.view, ph={None:"no menu",Lobby:"na sala",Matchmaking:"na fila",ReadyCheck:"partida encontrada!",ChampSelect:"seleção de campeões",InProgress:"em jogo",GameStart:"carregando",EndOfGame:"fim de jogo",WaitingForStats:"fim de jogo",PreEndOfGame:"fim de jogo",Offline:"LoL fechado",Desligado:"desligado"}[v.phase]||v.phase||"—";
+  if($("#celSt")) $("#celSt").innerHTML=`<span class="cel-dot ${v.connected?"on":""}"></span>LoL: <b>${esc(ph)}</b>`;
+  if($("#celLog")) $("#celLog").textContent=(v.log||[]).slice().reverse().join("\n")||"Nada ainda.";
+  if($("#celCz")) $("#celCz").innerHTML = v.ciencia ? `<div class="cel-cz">${iconDiv(v.ciencia.champ)}<div><b style="color:var(--gold2)">${esc(v.ciencia.nome)}</b><div class="note">${esc(v.ciencia.champ)} · ${v.ciencia.payload?"build pronta pra importar":"sem build pra importar"}</div></div></div>`
+    : `<p class="note" style="margin:0">Faça um sorteio: a sua carta aparece aqui e o campeão dela vira a primeira opção pra escolher.</p>`;
+}
 function renderHist(){
   renderRanks(); renderPrendaHist();
   const names=[...new Set(S.history.flatMap(d=>d.picks.map(p=>p.player)).filter(Boolean))];
@@ -3908,11 +4007,13 @@ const G = {
 };
 
 /* ============ início ============ */
+setInterval(()=>{ try{ syncRemoteCiencia(); }catch(e){} }, 2500);
 (async()=>{ await loadAppState(); await staffInit();
   if(!S.extra) S.extra={};
   S.custom.forEach(c=>{ if(!c.ts) c.ts = 1; });
   syncOptInputs(S.opts); renderPlayers(); loadFlbLive(false); FLBDD.loadDD(); G.start();
   if(window.cloudPutAdmin) $("#navAdmin").style.display="";
+  if(window.remoteInfo && flagOn("lcu")) $("#navCel").style.display="";
   // versão sem atualização pelo Drive (pública): some o botão e a ajuda de atualizar
   if(!window.checkUpdate && window.lcuImport){ const ub=$("#updBtn"); if(ub) ub.style.display="none"; const hc=[...document.querySelectorAll(".hcard")].find(c=>/Como atualizar o programa/.test(c.textContent)); if(hc) hc.style.display="none"; }
   // sem os wallpapers no pacote (versão pública): some a aba

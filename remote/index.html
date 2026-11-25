@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1018">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Ciência LOL · Celular</title>
+<style>
+  :root{--bg:#0a1018;--card:#121b26;--line:#1f2c3b;--txt:#e6edf5;--mut:#7f8fa3;--gold:#c8aa6e;--blue:#3fa7d6;--red:#e0525b;--green:#3ecf8e}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px 12px 40px;max-width:640px;margin-inline:auto}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  h1{font-size:18px;margin:0;flex:1;letter-spacing:.3px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
+  .dot.on{background:var(--green)}
+  .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--line);color:var(--mut)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:0 0 10px}
+  .big{font-size:26px;font-weight:700}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  button{font:inherit;border:0;border-radius:10px;padding:12px 16px;background:var(--line);color:var(--txt);cursor:pointer}
+  button.primary{background:var(--gold);color:#1a1206;font-weight:700}
+  button.accept{background:var(--green);color:#04210f;font-weight:800;font-size:22px;flex:1;padding:22px}
+  button.danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+  button:disabled{opacity:.4}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:22px}
+  .turn{font-weight:800;font-size:20px}
+  .turn.ban{color:var(--red)} .turn.pick{color:var(--blue)}
+  input[type=search],input[type=number]{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0c141e;color:var(--txt)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:10px;max-height:46vh;overflow:auto}
+  .ch{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--mut);text-align:center;cursor:pointer}
+  .ch img{width:56px;height:56px;border-radius:10px;border:2px solid transparent;background:#000}
+  .ch.sel img{border-color:var(--gold)}
+  .ch.sel{color:var(--gold)}
+  .icons{display:flex;gap:6px;flex-wrap:wrap}
+  .icons img{width:38px;height:38px;border-radius:8px;background:#000}
+  .icons .me{outline:2px solid var(--gold)}
+  .icons .intent{opacity:.45}
+  .icons .ban{filter:grayscale(1) brightness(.6)}
+  .empty{width:38px;height:38px;border-radius:8px;background:#0c141e;border:1px dashed var(--line)}
+  .muted{color:var(--mut);font-size:13px}
+  .switch{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
+  .switch input{width:22px;height:22px;accent-color:var(--gold)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+  .chip{display:flex;align-items:center;gap:6px;background:#0c141e;border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 3px;font-size:13px}
+  .chip img{width:24px;height:24px;border-radius:50%}
+  .chip b{color:var(--mut);font-weight:400;cursor:pointer;padding-left:2px}
+  .chip .n{color:var(--gold);font-size:11px}
+  .add{padding:6px 12px;font-size:13px}
+  #log{font:12px/1.5 ui-monospace,monospace;color:var(--mut);white-space:pre-wrap;max-height:160px;overflow:auto}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-end;z-index:9}
+  .modal.open{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:640px;margin:auto auto 0;border-radius:16px 16px 0 0;padding:14px;max-height:85vh;display:flex;flex-direction:column}
+  .sheet .grid{max-height:none;flex:1}
+  .flash{animation:flash 1s infinite}
+  @keyframes flash{50%{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,170,110,.35)}}
+  #err{color:var(--red);font-size:13px;min-height:1em}
+  .cz{display:flex;gap:12px;align-items:center}
+  .cz img{width:56px;height:56px;border-radius:12px;border:2px solid var(--gold);background:#000}
+  .cz .t{flex:1;min-width:0}
+  .cz .t b{display:block;color:var(--gold);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cz .t span{color:var(--mut);font-size:13px}
+  .czb{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .czb button{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>🧪 Ciência LOL</h1>
+  <span class="pill" id="phase">…</span>
+</header>
+
+<div class="card" id="alertsCard">
+  <div class="row" style="justify-content:space-between">
+    <span class="muted">Som e vibração quando a fila estourar ou chegar sua vez.</span>
+    <button id="btnAlerts" class="add">Ativar alertas</button>
+  </div>
+</div>
+
+<div id="err"></div>
+
+<!-- Ciência sorteada -->
+<div class="card" id="czCard" hidden>
+  <h2>Sua ciência</h2>
+  <div class="cz"><img id="czImg" alt=""><div class="t"><b id="czNome"></b><span id="czChamp"></span></div></div>
+  <div class="czb">
+    <button class="primary" id="btnCzPick" hidden>Escolher</button>
+    <button id="btnCzImport" hidden>⚡ Importar build</button>
+  </div>
+</div>
+
+<!-- Fila / Ready check -->
+<div class="card" id="rcCard" hidden>
+  <h2>Partida encontrada</h2>
+  <div class="row" style="margin-bottom:12px">
+    <span class="timer" id="rcTimer"></span><span class="muted" id="rcStatus"></span>
+  </div>
+  <div class="row">
+    <button class="accept" id="btnAccept">ACEITAR</button>
+    <button class="danger" id="btnDecline">Recusar</button>
+  </div>
+</div>
+
+<!-- Seleção de campeões -->
+<div class="card" id="csCard" hidden>
+  <h2>Seleção de campeões</h2>
+  <div class="row" style="justify-content:space-between;margin-bottom:10px">
+    <span class="turn" id="csTurn"></span>
+    <span class="timer" id="csTimer"></span>
+  </div>
+  <div class="muted">Seu time</div>
+  <div class="icons" id="myTeam" style="margin:4px 0 8px"></div>
+  <div class="muted">Inimigos</div>
+  <div class="icons" id="theirTeam" style="margin:4px 0 8px"></div>
+  <div class="muted">Banidos</div>
+  <div class="icons" id="bans" style="margin:4px 0 10px"></div>
+
+  <div id="pickArea" hidden>
+    <input type="search" id="search" placeholder="Buscar campeão…" autocomplete="off">
+    <div class="grid" id="grid"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="btnLock" style="flex:1" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modo automático -->
+<div class="card">
+  <h2>Modo automático (se você não responder)</h2>
+  <label class="switch"><span>Aceitar partida sozinho</span><input type="checkbox" id="autoAccept"></label>
+  <label class="switch"><span>Banir/escolher sozinho</span><input type="checkbox" id="autoSelect"></label>
+  <label class="switch"><span>Campeão da ciência sorteada primeiro</span><input type="checkbox" id="useCiencia"></label>
+  <label class="switch"><span>Importar a build da ciência ao travar</span><input type="checkbox" id="autoImport"></label>
+  <label class="switch"><span>Agir quando faltar (segundos)</span><input type="number" id="secondsLeft" min="1" max="60" style="width:80px"></label>
+  <div style="margin-top:6px"><span class="muted">Bans, em ordem de prioridade</span>
+    <div class="chips" id="banChips"></div>
+    <button class="add" data-add="banList">+ adicionar ban</button>
+  </div>
+  <div style="margin-top:12px"><span class="muted">Picks, em ordem de prioridade (se um for pego, vai pro próximo)</span>
+    <div class="chips" id="pickChips"></div>
+    <button class="add" data-add="pickList">+ adicionar pick</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Histórico</h2>
+  <div id="log"></div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <div class="row" style="margin-bottom:8px">
+      <input type="search" id="mSearch" placeholder="Buscar campeão…" style="flex:1" autocomplete="off">
+      <button id="mClose">Fechar</button>
+    </div>
+    <div class="grid" id="mGrid"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let champs = [], byId = {}, state = null, auto = null;
+let selected = 0, lastActionId = 0, prevPhase = '', prevTurn = 0;
+const PHASES = {None:'No menu',Lobby:'Sala',Matchmaking:'Na fila',ReadyCheck:'Partida encontrada!',ChampSelect:'Seleção',GameStart:'Carregando',InProgress:'Em jogo',WaitingForStats:'Fim de jogo',EndOfGame:'Fim de jogo',PreEndOfGame:'Fim de jogo',Reconnect:'Reconectar',Offline:'LoL fechado',Desligado:'Desligado'};
+const CS_PHASES = {PLANNING:'Declarando intenção',BAN_PICK:'Bans e picks',FINALIZATION:'Finalizando',GAME_STARTING:'Iniciando'};
+
+const icon = id => id > 0 ? `/icon/${id}` : '';
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ---------- alertas ----------
+let audioCtx = null;
+$('btnAlerts').onclick = () => {
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  beep(); $('btnAlerts').textContent = 'Alertas ativos ✓';
+};
+function beep() {
+  if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+  if (!audioCtx) return;
+  [0, .25, .5].forEach(t => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(.25, audioCtx.currentTime + t);
+    o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + .18);
+  });
+}
+
+// ---------- ready check ----------
+$('btnAccept').onclick = () => api('/api/accept', {}).catch(showErr);
+$('btnDecline').onclick = () => api('/api/decline', {}).catch(showErr);
+
+// ---------- seleção ----------
+$('search').oninput = renderGrid;
+$('btnLock').onclick = async () => {
+  const a = state?.champSelect?.myAction;
+  if (!a || !selected) return;
+  $('btnLock').disabled = true;
+  try { await api('/api/lock', {actionId:a.id, championId:selected}); } catch(e) { showErr(e); }
+};
+
+function available(cs) {
+  const a = cs.myAction; if (!a) return [];
+  const allow = new Set(a.type === 'ban' ? cs.bannable : cs.pickable);
+  (cs.unavailable || []).forEach(id => allow.delete(id));
+  return champs.filter(c => allow.has(c.id));
+}
+
+function renderGrid() {
+  const cs = state?.champSelect; if (!cs?.myAction) return;
+  const q = norm($('search').value);
+  const list = available(cs).filter(c => !q || norm(c.name).includes(q) || norm(c.alias).includes(q));
+  $('grid').innerHTML = list.map(c =>
+    `<div class="ch ${c.id===selected?'sel':''}" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}"><span>${c.name}</span></div>`).join('');
+}
+$('grid').onclick = e => {
+  const el = e.target.closest('.ch'); if (!el) return;
+  selected = +el.dataset.id;
+  const a = state?.champSelect?.myAction;
+  if (a) api('/api/hover', {actionId:a.id, championId:selected}).catch(()=>{});
+  $('btnLock').disabled = false;
+  $('btnLock').textContent = (a?.type === 'ban' ? 'Banir ' : 'Escolher ') + (byId[selected]?.name || '');
+  renderGrid();
+};
+
+function teamIcons(slots) {
+  return (slots||[]).map(s => {
+    const id = s.championId || s.intent;
+    const cls = (s.me?'me ':'') + (!s.championId && s.intent ? 'intent':'');
+    return id ? `<img class="${cls}" src="${icon(id)}" title="${byId[id]?.name||''}">` : `<div class="empty ${s.me?'me':''}"></div>`;
+  }).join('');
+}
+
+// ---------- automático ----------
+['autoAccept','autoSelect','useCiencia','autoImport'].forEach(k => $(k).onchange = () => saveAuto({[k]: $(k).checked}));
+$('secondsLeft').onchange = () => saveAuto({secondsLeft: +$('secondsLeft').value || 8});
+async function saveAuto(patch) {
+  auto = {...auto, ...patch};
+  auto = await api('/api/auto', auto).catch(showErr) || auto;
+  renderAuto();
+}
+function renderAuto() {
+  if (!auto) return;
+  $('autoAccept').checked = auto.autoAccept;
+  $('autoSelect').checked = auto.autoSelect;
+  $('useCiencia').checked = !!auto.useCiencia;
+  $('autoImport').checked = !!auto.autoImport;
+  if (document.activeElement !== $('secondsLeft')) $('secondsLeft').value = auto.secondsLeft;
+  const chips = key => (auto[key]||[]).map((id,i) =>
+    `<span class="chip"><img src="${icon(id)}"><span class="n">${i+1}</span>${byId[id]?.name||id}<b data-rm="${key}:${i}">✕</b></span>`).join('') || '<span class="muted">vazio</span>';
+  $('banChips').innerHTML = chips('banList');
+  $('pickChips').innerHTML = chips('pickList');
+}
+document.addEventListener('click', e => {
+  const rm = e.target.dataset?.rm;
+  if (rm) { const [k,i] = rm.split(':'); const l = [...(auto[k]||[])]; l.splice(+i,1); saveAuto({[k]:l}); }
+  const add = e.target.dataset?.add;
+  if (add) openPicker(add);
+});
+
+// ---------- modal de escolha ----------
+let pickerKey = null;
+function openPicker(key) { pickerKey = key; $('mSearch').value=''; renderModal(); $('modal').classList.add('open'); }
+$('mClose').onclick = () => $('modal').classList.remove('open');
+$('mSearch').oninput = renderModal;
+function renderModal() {
+  const q = norm($('mSearch').value), have = new Set(auto[pickerKey]||[]);
+  $('mGrid').innerHTML = champs.filter(c => !have.has(c.id) && (!q || norm(c.name).includes(q)))
+    .map(c => `<div class="ch" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}"><span>${c.name}</span></div>`).join('');
+}
+$('mGrid').onclick = e => {
+  const el = e.target.closest('.ch'); if (!el) return;
+  saveAuto({[pickerKey]: [...(auto[pickerKey]||[]), +el.dataset.id]});
+  $('modal').classList.remove('open');
+};
+
+// ---------- loop ----------
+function showErr(e) { $('err').textContent = String(e.message || e).slice(0,200); setTimeout(()=>$('err').textContent='', 4000); }
+
+async function loadChamps() {
+  try {
+    champs = (await api('/api/champions')).sort((a,b)=>a.name.localeCompare(b.name));
+    byId = Object.fromEntries(champs.map(c=>[c.id,c]));
+    renderAuto();
+  } catch {}
+}
+
+async function poll() {
+  try {
+    state = await api('/api/state');
+    if (!champs.length && state.connected) await loadChamps();
+    if (!auto || document.activeElement?.type !== 'number') { auto = state.auto; renderAuto(); }
+    render();
+  } catch(e) {
+    $('dot').classList.remove('on'); $('phase').textContent = 'PC offline';
+  }
+  setTimeout(poll, 1000);
+}
+
+function render() {
+  const s = state;
+  $('dot').classList.toggle('on', s.connected);
+  $('phase').textContent = PHASES[s.phase] || s.phase;
+  if (s.error && !s.connected) $('err').textContent = s.error;
+  else if ($('err').textContent.startsWith('cliente')) $('err').textContent = '';
+
+  // alerta de fila
+  if (s.phase === 'ReadyCheck' && prevPhase !== 'ReadyCheck') beep();
+  prevPhase = s.phase;
+
+  const rc = s.readyCheck;
+  $('rcCard').hidden = !rc;
+  $('rcCard').classList.toggle('flash', !!rc && rc.playerResponse === 'None');
+  if (rc) {
+    $('rcTimer').textContent = Math.max(0, Math.ceil(12 - rc.timer)) + 's';
+    const resp = {None:'aguardando sua resposta', Accepted:'você aceitou ✓', Declined:'você recusou'}[rc.playerResponse] || rc.playerResponse;
+    $('rcStatus').textContent = resp;
+    $('btnAccept').disabled = rc.playerResponse !== 'None';
+  }
+
+  renderCiencia(s);
+  const cs = s.champSelect;
+  $('csCard').hidden = !cs;
+  if (!cs) { lastActionId = 0; selected = 0; return; }
+  $('csTimer').textContent = Math.max(0, Math.ceil(cs.timeLeft)) + 's';
+  $('myTeam').innerHTML = teamIcons(cs.myTeam);
+  $('theirTeam').innerHTML = teamIcons(cs.theirTeam);
+  $('bans').innerHTML = (cs.bans||[]).map(id => `<img class="ban" src="${icon(id)}">`).join('') || '<span class="muted">—</span>';
+
+  const a = cs.myAction;
+  $('csCard').classList.toggle('flash', !!a);
+  if (a) {
+    $('csTurn').textContent = a.type === 'ban' ? 'SUA VEZ DE BANIR' : 'SUA VEZ DE ESCOLHER';
+    $('csTurn').className = 'turn ' + a.type;
+    if (a.id !== lastActionId) {
+      lastActionId = a.id; selected = a.championId || 0;
+      $('search').value = ''; beep();
+      $('btnLock').disabled = !selected;
+      $('btnLock').textContent = selected ? ((a.type==='ban'?'Banir ':'Escolher ') + (byId[selected]?.name||'')) : 'Confirmar';
+      renderGrid();
+    }
+  } else {
+    $('csTurn').textContent = CS_PHASES[cs.phase] || 'Aguardando';
+    $('csTurn').className = 'turn';
+  }
+  $('pickArea').hidden = !a;
+  $('log').textContent = (s.log||[]).slice().reverse().join('\n');
+}
+// ---------- ciência ----------
+function renderCiencia(s) {
+  const c = s.ciencia, cs = s.champSelect;
+  $('czCard').hidden = !c;
+  if (!c) return;
+  $('czImg').src = icon(c.key); $('czNome').textContent = c.nome; $('czChamp').textContent = c.champ;
+  const a = cs && cs.myAction;
+  const can = a && a.type === 'pick' && available(cs).some(x => x.id === c.key);
+  $('btnCzPick').hidden = !can;
+  $('btnCzPick').textContent = 'Escolher ' + c.champ;
+  $('btnCzImport').hidden = !(cs && c.payload);
+  $('btnCzImport').textContent = s.imported ? '⚡ Importar de novo' : '⚡ Importar build';
+}
+$('btnCzPick').onclick = async () => {
+  const a = state?.champSelect?.myAction, c = state?.ciencia; if (!a || !c) return;
+  $('btnCzPick').disabled = true;
+  try { await api('/api/lock', {actionId:a.id, championId:c.key}); } catch(e) { showErr(e); }
+  $('btnCzPick').disabled = false;
+};
+$('btnCzImport').onclick = async () => {
+  $('btnCzImport').disabled = true;
+  try { await api('/api/import', {}); } catch(e) { showErr(e); }
+  $('btnCzImport').disabled = false;
+};
+
+// log também fora da seleção
+setInterval(() => { if (state) $('log').textContent = (state.log||[]).slice().reverse().join('\n'); }, 1000);
+
+loadChamps(); poll();
+</script>
+</body>
+</html>

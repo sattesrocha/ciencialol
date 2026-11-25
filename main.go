@@ -67,6 +67,7 @@ func main() {
 	logStep("início (versão " + AppVersion + ")")
 	opggInit(dir)
 	lcuLogInit(dir)
+	remoteInit(dir)
 	// se o programa der erro e fechar, guarda o motivo e avisa (em vez de sumir sem explicação)
 	defer func() {
 		if r := recover(); r != nil {
@@ -178,6 +179,27 @@ func main() {
 	bindAsync(w, "lcuImport", func(a []string) (any, error) { return lcuImport(arg(a, 0), arg(a, 1) == "true") })
 	bindAsync(w, "lcuRecent", func(a []string) (any, error) { return lcuRecent() })
 	bindAsync(w, "lcuMyBuilds", func(a []string) (any, error) { return lcuMyBuilds() })
+	bindAsync(w, "remoteInfo", func(a []string) (any, error) { return remote.info(), nil })
+	bindAsync(w, "remoteEnable", func(a []string) (any, error) { return remote.setEnabled(arg(a, 0) == "1") })
+	bindAsync(w, "remoteNewToken", func(a []string) (any, error) { return remote.newToken(), nil })
+	bindAsync(w, "remoteSetAuto", func(a []string) (any, error) {
+		var c rmAuto
+		if err := json.Unmarshal([]byte(arg(a, 0)), &c); err != nil {
+			return nil, errors.New("configuração inválida")
+		}
+		return remote.setAuto(c), nil
+	})
+	bindAsync(w, "remoteSetCiencia", func(a []string) (any, error) {
+		var c *rmCiencia
+		if s := arg(a, 0); s != "" && s != "null" {
+			c = &rmCiencia{}
+			if err := json.Unmarshal([]byte(s), c); err != nil || len(c.Payload) > 200000 {
+				return nil, errors.New("ciência inválida")
+			}
+		}
+		remote.setCiencia(c)
+		return true, nil
+	})
 	bindAsync(w, "staffCheck", func(a []string) (any, error) { return staffCheck(arg(a, 0)), nil })
 	bindAsync(w, "staffSign", func(a []string) (any, error) { return staffSign(arg(a, 0), arg(a, 1)) })
 	bindAsync(w, "staffVerify", func(a []string) (any, error) { return staffVerify(arg(a, 0)) })

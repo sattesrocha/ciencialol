@@ -81,7 +81,10 @@ func lockfileCandidates() []string {
 // está rodando (o atual), depois os lugares comuns. Cada candidato é conferido com um pedido de
 // verdade (com a senha): um lockfile velho pode apontar pra uma porta que hoje é de outro programa,
 // e aí o importar ficava esperando até estourar o tempo.
-func lcuConnect() (*lcuConn, error) {
+func lcuConnect() (*lcuConn, error) { return lcuConnectLog(lcuLog) }
+
+// lcuConnectLog: igual, mas anotando em logf (o controle pelo celular tenta a cada segundo e não anota)
+func lcuConnectLog(logf func(string, ...any)) (*lcuConn, error) {
 	type cand struct{ port, pass, from string }
 	var cands []cand
 	var lerr error
@@ -111,7 +114,7 @@ func lcuConnect() (*lcuConn, error) {
 	for _, c := range cands {
 		cn, err := net.DialTimeout("tcp", "127.0.0.1:"+c.port, 700*time.Millisecond)
 		if err != nil {
-			lcuLog("  porta %s fechada (%s)", c.port, c.from)
+			logf("  porta %s fechada (%s)", c.port, c.from)
 			continue
 		}
 		cn.Close()
@@ -121,11 +124,11 @@ func lcuConnect() (*lcuConn, error) {
 		t0 := time.Now()
 		st, err := lc.do1("GET", "/lol-gameflow/v1/gameflow-phase", nil, nil)
 		if err == nil || (st >= 400 && st < 500 && st != 401 && st != 403) {
-			lcuLog("  conectado na porta %s em %dms (%s)", c.port, time.Since(t0).Milliseconds(), c.from)
+			logf("  conectado na porta %s em %dms (%s)", c.port, time.Since(t0).Milliseconds(), c.from)
 			lc.cl.Timeout = 10 * time.Second
 			return lc, nil
 		}
-		lcuLog("  porta %s não é o LoL atual ou não respondeu: %d %v (%s)", c.port, st, err, c.from)
+		logf("  porta %s não é o LoL atual ou não respondeu: %d %v (%s)", c.port, st, err, c.from)
 	}
 	if anyAlive {
 		return nil, errors.New("o LoL está aberto mas não respondeu agora (ele pode estar carregando ou reiniciando). Espere alguns segundos e tente de novo")
