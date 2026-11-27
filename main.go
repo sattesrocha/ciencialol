@@ -163,8 +163,9 @@ func main() {
 
 	// funções que usam a internet: em segundo plano, pra janela não travar
 	w.Init(asyncJS)
-	// tema de Halloween já na abertura (sem piscar o visual normal antes)
-	w.Init("window.__HWPREF=" + strconv.FormatBool(halloweenPref(statePath)) + ";")
+	// tema (Natal ou Halloween) já na abertura (sem piscar o visual normal antes)
+	hwOn, xmOn, xmEstilo := themePrefs(statePath)
+	w.Init("window.__HWPREF=" + strconv.FormatBool(hwOn) + ";window.__XMPREF=" + strconv.FormatBool(xmOn) + ";window.__XMVAR=" + strconv.Quote(xmEstilo) + ";")
 	if roomSecret != "" {
 		w.Init("window.__RS=" + strconv.Quote(roomSecret) + ";")
 	}
@@ -266,21 +267,23 @@ func main() {
 // chave das salas online (definida em roomkey_secret.go; sem ela o app usa uma chave de teste)
 var roomSecret = ""
 
-// lê no dados.json se o tema de Halloween está ligado (padrão: ligado)
-func halloweenPref(path string) bool {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return true
-	}
+// lê no dados.json qual tema está ligado. Natal: ligado se ninguém desligou (estilo "branco" ou
+// "noite"). Halloween: só se alguém escolheu (e nunca junto com o Natal).
+func themePrefs(path string) (halloween, natal bool, estilo string) {
 	var st struct {
 		Opts struct {
-			Halloween *bool `json:"halloween"`
+			Halloween *bool  `json:"halloween"`
+			Natal     *bool  `json:"natal"`
+			Estilo    string `json:"natalEstilo"`
 		} `json:"opts"`
 	}
-	if json.Unmarshal(b, &st) != nil || st.Opts.Halloween == nil {
-		return true
+	if b, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(b, &st)
 	}
-	return *st.Opts.Halloween
+	natal = st.Opts.Natal == nil || *st.Opts.Natal
+	halloween = !natal && st.Opts.Halloween != nil && *st.Opts.Halloween
+	estilo = st.Opts.Estilo
+	return
 }
 
 // registro de abertura (inicio.log na pasta de dados): mostra até onde o programa chegou

@@ -100,7 +100,9 @@
     const cdt=document.querySelector(".cd-tag"); if(cdt && HW.orig.has("cdtag")) cdt.textContent=HW.orig.get("cdtag");
   }
   HW.set = function(on){
-    on=!!on; if(on===HW.on) return; HW.on=on;
+    on=!!on; if(on===HW.on) return;
+    if(on && window.XM && XM.on) XM.set(false); // um tema de cada vez
+    HW.on=on;
     styles().forEach(s=>{ if(!HW.orig.has(s)) HW.orig.set(s, s.textContent); s.textContent = on ? swap(HW.orig.get(s)) : HW.orig.get(s); });
     document.documentElement.classList.toggle("hw", on);
     on ? decorate() : undecorate();
@@ -137,7 +139,7 @@
     const b=mk(`<button class="hwtoggle" id="hwToggle" title="Liga ou desliga o tema de Halloween"><span>🎃</span>Halloween<i class="sw"></i></button>`);
     vb.parentNode.insertBefore(b, vb);
     b.classList.toggle("on", HW.on);
-    b.onclick=()=>{ HW.set(!HW.on); try{ S.opts.halloween=HW.on; save(); }catch(e){} try{ localStorage.setItem("hwpref", HW.on?"1":"0"); }catch(e){} };
+    b.onclick=()=>{ HW.set(!HW.on); try{ S.opts.halloween=HW.on; if(HW.on) S.opts.natal=false; save(); }catch(e){} try{ localStorage.setItem("hwpref", HW.on?"1":"0"); if(HW.on) localStorage.setItem("xmpref","0"); }catch(e){} if(window.XM) XM.music.sync(); };
   }
   // ---------- sons extras (se o arquivo existir no app) ----------
   HW.has = { musica:false, roleta:false, lobo:false };
@@ -237,7 +239,7 @@
   const baseSet = HW.set;
   HW.set = function(on){ baseSet(on); renderMus(); HW.music.sync(); };
 
-  HW.init = function(){ toggleBtn(); musicBtn(); let want=true; try{ want = S.opts.halloween!==false; }catch(e){} HW.set(want); renderMus(); HW.music.sync(); };
+  HW.init = function(){ toggleBtn(); musicBtn(); let want=false; try{ want = S.opts.halloween===true && S.opts.natal===false; }catch(e){} HW.set(want); renderMus(); HW.music.sync(); };
   window.HW = HW;
   // aplica o tema já na abertura, antes de mostrar a janela (nada de piscar o visual normal)
   try{ HW.set(window.__HWON!==false); }catch(e){ console.error(e); }

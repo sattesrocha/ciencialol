@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ciência LOL</title>
-<script>(function(){ var on=window.__HWPREF; try{ var lp=localStorage.getItem("hwpref"); if(lp==="1"||lp==="0") on=(lp==="1"); }catch(e){} if(on===undefined){ try{ var st=JSON.parse(localStorage.getItem("ciencia-state")||"{}"); on=!(st.opts&&st.opts.halloween===false); }catch(e){ on=true; } }
+<script>(function(){ var st={}; try{ st=(JSON.parse(localStorage.getItem("ciencia-state")||"{}").opts)||{}; }catch(e){}
+  var lp=function(k){ try{ var v=localStorage.getItem(k); return v==="1"?true:v==="0"?false:undefined; }catch(e){ return undefined; } };
+  // Natal: ligado se ninguém desligou. Halloween: só se alguém escolheu, e nunca junto com o Natal.
+  var xm=lp("xmpref"); if(xm===undefined) xm=window.__XMPREF; if(xm===undefined) xm=st.natal!==false;
+  var on=lp("hwpref"); if(on===undefined) on=window.__HWPREF; if(on===undefined) on=st.halloween===true; if(xm) on=false;
+  window.__XMON=xm; if(xm) document.documentElement.classList.add("xmpre");
   window.__HWON=on; if(on) document.documentElement.classList.add("hwpre");
   // a tela só aparece depois de carregar os dados salvos (sem mostrar o padrão e trocar logo em seguida)
   document.documentElement.classList.add("booting"); setTimeout(function(){ document.documentElement.classList.remove("booting"); }, 4000); })();</script>
@@ -18,7 +23,7 @@
   --top:#e8a33c; --jungle:#4fbf6a; --mid:#4aa8ff; --adc:#ef5b6b; --sup:#c58bff; --duo:#0ac8b9;
   --r:14px;
 }
-html.hwpre body,html.booting body{visibility:hidden}
+html.hwpre body,html.xmpre body,html.booting body{visibility:hidden}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI",system-ui,sans-serif;font-size:14px;overflow:hidden}
 body{background:
@@ -866,6 +871,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 @media (max-width:1050px){.draw-layout{grid-template-columns:1fr}.dgrid{grid-template-columns:1fr}}
 </style>
 <link rel="stylesheet" href="halloween.css">
+<link rel="stylesheet" href="natal.css">
 </head>
 <body>
 <div class="app">
@@ -1079,6 +1085,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 <script src="mqtt.js"></script>
 <script src="roomcrypt.js"></script>
 <script src="halloween.js"></script>
+<script src="natal.js"></script>
 <script>
 "use strict";
 /* ============ ponte com o programa (Go) — com fallback pro navegador ============ */
@@ -1721,7 +1728,7 @@ const PrendaFX = (()=>{
   const COLORS=["#c8aa6e","#0ac8b9","#ef5b6b","#9b6bff","#4aa8ff","#e8a33c"];
   function wheel(names){
     const n=Math.max(names.length,1), r=150, c=160, step=2*Math.PI/n; let out="";
-    const CL = window.HW&&HW.on ? ["#ff8a1f","#b98aff","#8be05a","#ff6b7d","#ffc061","#e08bff"] : COLORS;
+    const CL = window.XM&&XM.on ? ["#ff4f5e","#ffd23f","#43e07a","#f4fbff","#5ab8ff","#ecc25e"] : window.HW&&HW.on ? ["#ff8a1f","#b98aff","#8be05a","#ff6b7d","#ffc061","#e08bff"] : COLORS;
     names.forEach((nm,i)=>{
       const a0=-Math.PI/2+i*step, a1=a0+step, large=step>Math.PI?1:0;
       const x0=c+r*Math.cos(a0), y0=c+r*Math.sin(a0), x1=c+r*Math.cos(a1), y1=c+r*Math.sin(a1);
@@ -1732,22 +1739,22 @@ const PrendaFX = (()=>{
     return `<svg viewBox="0 0 320 320" class="pfx-wheel">${out}<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#c8aa6e" stroke-width="5"/></svg>`;
   }
   function confetti(box){
-    let h=""; for(let i=0;i<90;i++){ const col=["#c8aa6e","#f0e6d2","#ef5b6b","#0ac8b9"][i%4];
+    let h=""; for(let i=0;i<90;i++){ const col=(window.XM&&XM.on?["#ff4f5e","#43e07a","#ecc25e","#f4fbff"]:["#c8aa6e","#f0e6d2","#ef5b6b","#0ac8b9"])[i%4];
       h+=`<i style="left:${Math.random()*100}%;background:${col};animation-delay:${(Math.random()*0.6).toFixed(2)}s;animation-duration:${(2.2+Math.random()*1.6).toFixed(2)}s;transform:rotate(${Math.random()*360}deg)"></i>`; }
     box.innerHTML=h;
   }
-  function close(){ const had=!!el; timers.forEach(clearTimeout); timers=[]; if(had && window.HW) HW.duck(false); auds.forEach(a=>{ try{ a.pause(); }catch(e){} }); auds=[];
+  function close(){ const had=!!el; timers.forEach(clearTimeout); timers=[]; if(had && window.HW) HW.duck(false); if(had && window.XM) XM.duck(false); auds.forEach(a=>{ try{ a.pause(); }catch(e){} }); auds=[];
     if(el){ el.remove(); el=null; } document.body.classList.remove("pfx-shake"); document.removeEventListener("keydown", onKey);
     if(had && current && !busy) renderResults(false); }
   function onKey(e){ if(e.key==="Escape") close(); }
   function play(pr, names, canPunish){
-    close(); api.shownTs=pr.ts; if(window.HW) HW.duck(true);
+    close(); api.shownTs=pr.ts; if(window.HW) HW.duck(true); if(window.XM) XM.duck(true);
     el=document.createElement("div"); el.className="pfx";
-    el.innerHTML=`<div class="pfx-alarm"></div><div class="pfx-confetti"></div>${window.HW&&HW.on?HW.pfxBats():""}<button class="pfx-x" title="Fechar (Esc)">✕</button>
+    el.innerHTML=`<div class="pfx-alarm"></div><div class="pfx-confetti"></div>${window.HW&&HW.on?HW.pfxBats():""}${window.XM&&XM.on?XM.pfxFly():""}<button class="pfx-x" title="Fechar (Esc)">✕</button>
       <div class="pfx-stage">
         <div class="pfx-title">DERROTA</div>
         <div class="pfx-sub">ALGUÉM VAI PAGAR!</div>
-        <div class="pfx-wheelwrap"><div class="pfx-pointer"></div>${wheel(names)}<div class="pfx-hub">${window.HW&&HW.on?"🎃":"😈"}</div></div>
+        <div class="pfx-wheelwrap"><div class="pfx-pointer"></div>${wheel(names)}<div class="pfx-hub">${window.HW&&HW.on?"🎃":window.XM&&XM.on?"🎅":"😈"}</div></div>
         <div class="pfx-result">
           <div class="pfx-name"><b>${esc(pr.name)}</b> vai pagar a prenda!</div>
           <div class="pfx-supbox">
@@ -1766,7 +1773,7 @@ const PrendaFX = (()=>{
     { const me=el; requestAnimationFrame(()=>{ if(me===el && el) el.classList.add("on","s1"); }); } shake(); snd("derrota");
     let music=null;
     const hwr = window.HW && HW.on && HW.has.roleta;
-    at(4000, ()=>{ if(el){ el.classList.add("s2"); shake(); if(!hwr) music=snd("roleta"); else if(HW.has.lobo) snd("hw_lobo"); } });
+    at(4000, ()=>{ if(el){ el.classList.add("s2"); shake(); if(!hwr) music=snd(window.XM && XM.on && XM.has.prenda ? "xm_prenda" : "roleta"); else if(HW.has.lobo) snd("hw_lobo"); } });
     if(hwr) at(7600, ()=>{ if(el) music=snd("hw_roleta"); });
     // 2) roleta
     at(8000, ()=>{ if(!el) return;
@@ -2047,6 +2054,7 @@ function syncVol(){
   const ov=$("#optVol"); if(ov) ov.value=v; const os=$("#optSound"); if(os) os.checked=on;
   if(typeof PrendaFX!=="undefined") PrendaFX.setVol();
   if(window.HW && HW.music) HW.music.sync();
+  if(window.XM && XM.music) XM.music.sync();
 }
 $("#volAll").oninput=e=>{ S.opts.vol=+e.target.value; if(S.opts.vol>0) S.opts.sound=true; save(); syncVol(); };
 $("#volAll").onchange=()=>{ if(S.opts.sound!==false) SFX.tick(2,5); };
@@ -2059,7 +2067,7 @@ $("#testSound").onclick=()=>{ S.opts.sound=true; $("#optSound").checked=true; sa
 // ---- sons tocados pelo próprio programa (Mixer do Windows mostra "Ciência LOL") ----
 // se o programa não conseguir, cai pro som do navegador interno
 const NSND = { ok:false, seq:1 };
-(async()=>{ try{ if(window.sndReady) NSND.ok = !!(await window.sndReady()); }catch(e){} NSND.done=true; if(window.HW && HW.music) HW.music.sync(); })();
+(async()=>{ try{ if(window.sndReady) NSND.ok = !!(await window.sndReady()); }catch(e){} NSND.done=true; if(window.HW && HW.music) HW.music.sync(); if(window.XM && XM.music) XM.music.sync(); })();
 function nativeSound(name, vol01, loop){
   const id=NSND.seq++; let v=vol01, sent=-1;
   const send=()=>{ const q=Math.round(Math.max(0,Math.min(1,v))*1000); if(Math.abs(q-sent)>=8){ sent=q; window.sndVol(id,q); } };
@@ -2129,10 +2137,10 @@ const STEP_MS = 2000;
 function countdown(){
   return new Promise(res=>{
     const el=$("#cd"), num=$("#cdNum"), ph=$("#cdPhrase"), em=$("#cdEmoji"), bar=$("#cdBar"), dots=$("#cdDots"), inner=el.querySelector(".cd-inner");
-    const FRASES = (window.HW && HW.on) ? HW.FRASES : FRASES_BASE;
+    const FRASES = (window.HW && HW.on) ? HW.FRASES : (window.XM && XM.on) ? XM.FRASES : FRASES_BASE;
     dots.innerHTML = FRASES.map(()=>"<i></i>").join("");
     inner.classList.remove("final"); el.classList.add("on"); let i=0;
-    const hwm = window.HW && HW.cdMusic ? HW.cdMusic() : null;
+    const hwm = (window.HW && HW.cdMusic ? HW.cdMusic() : null) || (window.XM && XM.cdMusic ? XM.cdMusic() : null);
     if(!hwm) SFX.riser(FRASES.length*STEP_MS/1000);
     const step=()=>{
       if(i>=FRASES.length){ el.classList.remove("on","shake"); if(hwm) hwm.stop(); res(); return; }
@@ -3806,6 +3814,13 @@ $("#admSave").onclick=async()=>{
 /* ============ NOVIDADES ============ */
 // Para anunciar algo novo: acrescente um bloco no topo com um "id" novo. A aba volta a brilhar pra todos.
 const NEWS = [
+  { id:"2026-11-27", date:"27 de novembro", items:[
+    ["🎄","<b>Edição de Natal</b>: o app inteiro entrou no clima, com neve caindo, pisca-pisca, árvore iluminada, trenó do Papai Noel, vila nevada e neve em cima dos cards. Liga e desliga no botão <b>🎄 Natal</b> do menu."],
+    ["❄️","<b>Dois estilos</b>: <b>Branco</b> (tudo nevado e claro) ou <b>Noite</b> (céu escuro com aurora e lua). A escolha fica na tela inicial, embaixo dos créditos."],
+    ["🎵","<b>Músicas de Natal</b>: trilha de fundo própria (com volume no menu), música nova na Roleta do Noel e na roleta da prenda."],
+    ["🐀","<b>Surpresa de Natal</b>: um convidado especial aparece ao abrir o app. Dá pra marcar \"Não mostrar mais\", e clicar na árvore do início chama ele de novo."],
+    ["🎁","<b>Efeitos natalinos</b>: o Sortear solta presentes e estrelas, o Ganhou solta presentes e o Perdeu ganha carvão."],
+  ]},
   { id:"2026-11-01", date:"1º de novembro", items:[
     ["📚","<b>Freedom com a Biblioteca</b>: depois de revelar, a carta já lista as builds da Biblioteca pro campeão escolhido. É só clicar numa pra usar e importar, ou pegar a do op.gg se preferir."],
     ["📋","<b>Detalhes da build</b>: depois de escolher a build na carta do Freedom, o botão Detalhes mostra runas, feitiços, itens e, na do op.gg, a ordem de habilidades."],
@@ -4043,6 +4058,7 @@ setInterval(()=>{ try{ syncRemoteCiencia(); }catch(e){} }, 2500);
   fetch("wall/ciencia-classico.png", {method:"HEAD"}).then(r=>{ if(!r.ok){ const b=document.querySelector('.nav button[data-v="wallpaper"]'); if(b) b.style.display="none"; } }).catch(()=>{});
   applyCfg(); renderHeroStats(); renderNews(); refreshNewsBadge();
   try{ HW.init(); }catch(e){ console.error(e); }
+  try{ XM.init(); }catch(e){ console.error(e); }
   try{ window.logPage && window.logPage("pronta"); }catch(e){}
   // abriu o app 6h ou mais depois do último sorteio: mesa limpa (tudo continua no Histórico)
   { const last=S.history[0]; if(last && Date.now()-last.ts > ROOM_TTL && (S.clearedTs||0) < last.ts){ S.clearedTs=Date.now(); save(); } }

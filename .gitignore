@@ -5,3 +5,4 @@ rsrc_windows_*.syso
 private_config.go
 admin_windows.go
 roomkey_secret_windows.go
+ui/snd/xm_musica.mp3
