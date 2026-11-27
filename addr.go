@@ -63,6 +63,7 @@ func (r *remoteApp) addrPublish(ips []string, port int) error {
 	body, _ := json.Marshal(addrMsg{IPs: ips, Port: port, TS: time.Now().Unix()})
 	req, _ := http.NewRequest("POST", n.Server+"/"+topic, bytes.NewReader(body))
 	req.Header.Set("Cache", "yes")
+	req.Header.Set("Firebase", "no") // não é aviso: não repassa pro Google/Apple
 	if n.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+n.Token)
 	}

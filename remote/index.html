@@ -348,11 +348,12 @@ async function rlSend(cmd, body) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv, additionalData:new TextEncoder().encode('cel')}, rl.key, new TextEncoder().encode(JSON.stringify({id, ts:Date.now(), cmd, body:body ?? {}}))));
   const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
-  const r = await fetch(`${SERVER}/${rl.up}`, {method:'POST', body:b64e(all)});
+  // firebase=no: sem isso o ntfy repassa cada mensagem pro Google/Apple, e com muitas ele corta os avisos de verdade
+  const r = await fetch(`${SERVER}/${rl.up}?firebase=no`, {method:'POST', body:b64e(all)});
   if (!r.ok) throw new Error('O ntfy recusou (' + r.status + '). Tente de novo.');
   return id;
 }
-function rlHello() { rl.lastHello = Date.now(); rlSend('hello').catch(() => {}); }
+function rlHello() { if (Date.now() - rl.lastHello < 20000 && rl.st) return; if (Date.now() - rl.lastHello < 5000) return; rl.lastHello = Date.now(); rlSend('hello').catch(() => {}); }
 function rlCall(cmd, body) {
   return new Promise((ok, err) => {
     rlSend(cmd, body).then(id => {
