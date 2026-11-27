@@ -181,8 +181,14 @@ func (r *remoteApp) openBtn() *ntfyAction {
 	r.mu.RLock()
 	en, port, tok := r.cfg.Enabled, r.cfg.Port, r.cfg.Token
 	r.mu.RUnlock()
+	if !en {
+		return nil
+	}
+	if l := r.stableLink(""); l != "" { // abre a tela do Ciência LOL (Wi-Fi ou 4G)
+		return &ntfyAction{Action: "view", Label: "Abrir", URL: l}
+	}
 	ips := localIPv4s()
-	if !en || len(ips) == 0 {
+	if len(ips) == 0 {
 		return nil
 	}
 	return &ntfyAction{Action: "view", Label: "Abrir", URL: fmt.Sprintf("http://%s:%d/?t=%s", ips[0], port, tok)}

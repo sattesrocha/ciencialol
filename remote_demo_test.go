@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"testing"
@@ -32,7 +33,11 @@ func TestRemoteDemoServer(t *testing.T) {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}()
+	if ns := os.Getenv("REMOTE_DEMO_NTFY"); ns != "" { // ponte pelo ntfy (ntfy de mentira)
+		r.cfg.Ntfy.Server = ns
+		go r.relayLoop(context.Background())
+	}
 	srv := &http.Server{Addr: "127.0.0.1:" + os.Getenv("REMOTE_DEMO_PORT"), Handler: r.handler()}
 	go srv.ListenAndServe()
-	time.Sleep(40 * time.Second)
+	time.Sleep(90 * time.Second)
 }

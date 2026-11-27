@@ -8,12 +8,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ciência LOL">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script>if (location.protocol === 'https:') document.querySelector('link[rel=manifest]').remove(); // no site: o atalho é o link com a chave</script>
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
 <title>Ciência LOL</title>
 <style>
-  @font-face{font-family:Cinzel;src:url(/cinzel.ttf) format("truetype");font-weight:400 900;font-display:swap}
+  @font-face{font-family:Cinzel;src:url(cinzel.ttf) format("truetype");font-weight:400 900;font-display:swap}
   :root{--bg:#070b14;--panel:#0f1726;--panel2:#16213a;--line:#233049;--text:#eef2f8;--muted:#8d9ab0;--gold:#c8aa6e;--gold2:#f0e6d2;--teal:#0ac8b9;--red:#e84057;--green:#3ecf8e;--blue:#4aa8ff;
         --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -73,6 +74,7 @@
   .turn.ban .t b{color:var(--red)} .turn.pick .t b{color:var(--teal)} .turn.wait .t b{color:var(--gold2)}
   .ring{position:relative;width:62px;height:62px;flex:none}
   .ring svg{transform:rotate(-90deg)}
+  svg{pointer-events:none}
   .ring span{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-variant-numeric:tabular-nums}
   .teams{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
   .trow{display:flex;align-items:center;gap:8px}
@@ -158,7 +160,7 @@
 </head>
 <body>
 <header class="appbar">
-  <img src="/logo.png" alt="">
+  <img src="logo.png" alt="">
   <h1>Ciência LOL</h1>
   <span class="status" id="status"><i></i><span id="phase">…</span></span>
 </header>
@@ -286,11 +288,11 @@
 
 <script>
 // veio pelo link com a chave: limpa a URL (a chave já ficou guardada no cookie)
-if (location.search) { const q = new URLSearchParams(location.search); history.replaceState(null, '', '/' + (q.get('go') === 'ntfy' ? '#ntfy' : location.hash)); }
+if (location.search && location.protocol !== 'https:') { const q = new URLSearchParams(location.search); history.replaceState(null, '', '/' + (q.get('go') === 'ntfy' ? '#ntfy' : location.hash)); }
 const $ = id => document.getElementById(id);
 let champs = [], byId = {}, ddVer = '', state = null, auto = null, pcOnline = true;
 let selected = 0, lastActionId = 0, prevPhase = '', tab = 'partida';
-const PHASES = {None:'No menu',Lobby:'Na sala',Matchmaking:'Na fila',ReadyCheck:'Partida!',ChampSelect:'Seleção',GameStart:'Carregando',InProgress:'Em jogo',WaitingForStats:'Fim de jogo',EndOfGame:'Fim de jogo',PreEndOfGame:'Fim de jogo',Reconnect:'Reconectar',Offline:'LoL fechado',Desligado:'Desligado'};
+const PHASES = {None:'No menu',Lobby:'Na sala',Matchmaking:'Na fila',ReadyCheck:'Partida!',ChampSelect:'Seleção',GameStart:'Carregando',InProgress:'Em jogo',WaitingForStats:'Fim de jogo',EndOfGame:'Fim de jogo',PreEndOfGame:'Fim de jogo',Reconnect:'Reconectar',Offline:'LoL fechado',Conectando:'Conectando',Desligado:'Desligado'};
 const CS_PHASES = {PLANNING:'Declarando intenções',BAN_PICK:'Bans e picks',FINALIZATION:'Últimos ajustes',GAME_STARTING:'A partida vai começar'};
 const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -304,7 +306,91 @@ function icon(id) {
 const art = id => { const c = byId[id]; return c && c.alias ? `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${encodeURIComponent(c.alias)}_0.jpg` : ''; };
 const nameOf = id => byId[id]?.name || ('#' + id);
 
+// ---------- ponte pelo ntfy (página aberta pelo site: funciona no Wi-Fi e no 4G) ----------
+// O PC e o celular trocam mensagens criptografadas num par de tópicos do ntfy tirados da chave do atalho.
+const RELAY = location.protocol === 'https:';
+const HP = location.hash.slice(1).split('&');
+const [BOX, KEY] = (HP[0] || '').split('.');
+const FLAGS = new Set(HP.slice(1).filter(x => !x.startsWith('s=')));
+const SRVP = HP.find(x => x.startsWith('s='));
+const SERVER = SRVP ? decodeURIComponent(SRVP.slice(2)) : 'https://ntfy.sh';
+const rl = {ready:null, down:'', up:'', key:null, st:null, at:0, skew:0, lastTs:0, pend:{}, es:null, start:Date.now(), lastHello:0};
+const b64e = b => { let s = ''; for (const x of b) s += String.fromCharCode(x); return btoa(s); };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const hexs = b => [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+async function rlInit() {
+  if (!/^[a-f0-9]{32}$/.test(KEY || '')) throw new Error('Atalho incompleto. Leia de novo o QR code na aba Celular do Ciência LOL.');
+  const hk = await crypto.subtle.importKey('raw', new TextEncoder().encode(KEY), {name:'HMAC', hash:'SHA-256'}, false, ['sign']);
+  const h = async l => new Uint8Array(await crypto.subtle.sign('HMAC', hk, new TextEncoder().encode(l)));
+  rl.down = 'clold-' + hexs(await h('down')).slice(0, 24);
+  rl.up = 'clolu-' + hexs(await h('up')).slice(0, 24);
+  rl.key = await crypto.subtle.importKey('raw', await h('enc'), 'AES-GCM', false, ['encrypt', 'decrypt']);
+  rlListen();
+}
+function rlListen() {
+  if (rl.es) rl.es.close();
+  rl.es = new EventSource(`${SERVER}/${rl.down}/sse`); // só o que chegar daqui pra frente
+  rl.es.onopen = rlHello; // conectou: pede o estado na hora
+  rl.es.onmessage = async e => {
+    try {
+      const m = JSON.parse(e.data); if (m.event && m.event !== 'message') return;
+      const raw = b64d(m.message);
+      const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:raw.slice(0, 12), additionalData:new TextEncoder().encode('pc')}, rl.key, raw.slice(12));
+      const o = JSON.parse(await new Response(new Blob([pt]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+      if (o.t === 'res') { const p = rl.pend[o.id]; if (p) { delete rl.pend[o.id]; o.ok ? p.ok(o.data ?? {ok:true}) : p.err(new Error(o.err || 'erro')); } return; }
+      if (o.t === 'state' && o.ts >= rl.lastTs) { rl.lastTs = o.ts; rl.st = o; rl.at = Date.now(); rl.skew = Date.now() - o.ts; }
+    } catch {}
+  };
+}
+async function rlSend(cmd, body) {
+  await rl.ready;
+  const id = hexs(crypto.getRandomValues(new Uint8Array(8)));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv, additionalData:new TextEncoder().encode('cel')}, rl.key, new TextEncoder().encode(JSON.stringify({id, ts:Date.now(), cmd, body:body ?? {}}))));
+  const all = new Uint8Array(12 + ct.length); all.set(iv); all.set(ct, 12);
+  const r = await fetch(`${SERVER}/${rl.up}`, {method:'POST', body:b64e(all)});
+  if (!r.ok) throw new Error('O ntfy recusou (' + r.status + '). Tente de novo.');
+  return id;
+}
+function rlHello() { rl.lastHello = Date.now(); rlSend('hello').catch(() => {}); }
+function rlCall(cmd, body) {
+  return new Promise((ok, err) => {
+    rlSend(cmd, body).then(id => {
+      rl.pend[id] = {ok, err};
+      setTimeout(() => { if (rl.pend[id]) { delete rl.pend[id]; err(new Error('O PC não respondeu. Confira se o Ciência LOL está aberto no PC.')); } }, 12000);
+    }, err);
+  });
+}
+function rlState() {
+  const o = rl.st;
+  if (!o || Date.now() - rl.at > 100000) {
+    if (Date.now() - rl.start < 12000) return {phase:'Conectando', connected:false, log:[]};
+    if (Date.now() - rl.lastHello > 15000) rlHello();
+    throw new Error('offline');
+  }
+  const s = JSON.parse(JSON.stringify(o.state));
+  const pcNow = Date.now() - rl.skew;
+  if (s.champSelect) s.champSelect.timeLeft = Math.max(0, (o.deadline - pcNow) / 1000);
+  if (s.readyCheck) s.readyCheck.timer = Math.max(0, (pcNow - o.rcStart) / 1000);
+  if (Date.now() - rl.lastHello > 180000) rlHello();
+  return s;
+}
+async function ddChamps() { // lista de campeões direto do Data Dragon
+  const vs = await (await fetch('https://ddragon.leagueoflegends.com/api/versions.json')).json();
+  const d = await (await fetch(`https://ddragon.leagueoflegends.com/cdn/${vs[0]}/data/pt_BR/champion.json`)).json();
+  return {ver: vs[0], list: Object.values(d.data).map(c => ({id:+c.key, name:c.name, alias:c.id}))};
+}
+if (RELAY) {
+  rl.ready = rlInit().catch(e => { toast(e); throw e; });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && rl.key) { rlListen(); rlHello(); } });
+}
+
 async function api(path, body) {
+  if (RELAY) {
+    if (path === '/api/state') return rlState();
+    if (path === '/api/champions') return ddChamps();
+    return rlCall(path.replace('/api/', ''), body);
+  }
   const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   if (!r.ok) throw new Error((await r.text()).trim() || ('erro ' + r.status));
   return r.json();
@@ -475,10 +561,10 @@ function renderNtfy(s) {
   $('ntSteps').innerHTML = IOS
     ? '<li>Toque em <b>Copiar tópico</b> aqui embaixo.</li><li>Abra o app <b>ntfy</b> e toque em <b>+</b>.</li><li>Cole o tópico e toque em <b>Subscribe</b>.</li><li>Pronto: no PC, use <b>Mandar aviso de teste</b> pra conferir.</li>'
     : '<li>Toque em <b>Abrir no ntfy</b> e confirme.</li><li>No tópico, ligue <b>Entrega instantânea</b> (o aviso chega na hora).</li><li>Se o botão não abrir o app: copie o tópico, abra o ntfy, toque em <b>+</b> e cole.</li>';
-  if (!ntfyShown && location.hash === '#ntfy') { // veio pelo QR do ntfy
+  if (!ntfyShown && (location.hash === '#ntfy' || (RELAY && FLAGS.has('n')))) { // veio pelo QR do ntfy
     ntfyShown = true; showTab('mais');
     setTimeout(() => { $('ntCard').scrollIntoView({behavior:'smooth', block:'center'}); $('ntCard').classList.add('hot'); }, 150);
-    history.replaceState(null, '', '/');
+    history.replaceState(null, '', RELAY ? location.pathname + '#' + HP.filter(x => x !== 'n').join('&') : '/');
   }
 }
 function renderInstall(s) {
@@ -491,9 +577,10 @@ function renderInstall(s) {
 // ---------- estado ----------
 function hero(s) {
   const h = $('hero');
-  if (!pcOnline) return h.innerHTML = `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o celular está no mesmo Wi-Fi (ou no Tailscale) e se o Ciência LOL está aberto no PC.</p>`;
+  if (!pcOnline) return h.innerHTML = RELAY ? `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o Ciência LOL está aberto no PC, com o controle pelo celular ligado.</p>` : `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o celular está no mesmo Wi-Fi (ou no Tailscale) e se o Ciência LOL está aberto no PC.</p>`;
   const p = s.phase;
   const M = {
+    Conectando: [null,'Conectando ao PC…',''],
     Offline: ['🖥️','LoL fechado','Abra o League of Legends no PC.'],
     Desligado: ['⏸️','Controle desligado','Ligue no Ciência LOL, na aba Celular.'],
     None: ['🏠','No menu','Quando a fila estourar, você aceita por aqui.'],

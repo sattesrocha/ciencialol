@@ -801,6 +801,7 @@ func (r *remoteApp) startServer() error {
 	r.mu.Unlock()
 	go func() { _ = srv.Serve(ln) }()
 	go r.addrLoop(ctx)
+	go r.relayLoop(ctx)
 	r.addLog("Controle pelo celular ligado na porta " + strconv.Itoa(port))
 	return nil
 }
