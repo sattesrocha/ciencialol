@@ -743,7 +743,7 @@ func (r *remoteApp) viewNow() rmView {
 		if r.cfg.Ntfy.Server != "" && r.cfg.Ntfy.Server != ntfyDefaultServer {
 			v.Stable += "&s=" + url.QueryEscape(r.cfg.Ntfy.Server)
 		}
-		v.Stable += "&i"
+		v.Stable += "&a" // botão "Criar atalho" da página do celular
 	}
 	if r.cfg.Ntfy.On && r.cfg.Ntfy.Topic != "" {
 		srv := r.cfg.Ntfy.Server
@@ -1090,7 +1090,7 @@ func (r *remoteApp) info() rmInfo {
 			in.Links = append(in.Links, fmt.Sprintf("http://%s:%d/?t=%s", ip, port, tok))
 		}
 		if len(in.Links) > 0 {
-			in.Stable = r.stableLink("i")
+			in.Stable = r.stableLink("") // QR: abre direto no PC
 			if png, err := qrcode.Encode(in.Stable, qrcode.Medium, 320); err == nil {
 				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 			}

@@ -10,6 +10,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -32,7 +34,7 @@ func (r *remoteApp) addrEnsureTopic() {
 	r.mu.Unlock()
 }
 
-// link fixo: #caixa.chave (+ "&i" = tela de criar atalho, "&n" = ir pra parte do ntfy)
+// link fixo: #caixa.chave (+ "&a" = dica de criar atalho, "&n" = ir pra parte do ntfy)
 func (r *remoteApp) stableLink(mode string) string {
 	r.mu.RLock()
 	topic, tok, srv := r.cfg.AddrTopic, r.cfg.Token, r.cfg.Ntfy.Server
@@ -66,15 +68,19 @@ func (r *remoteApp) addrPublish(ips []string, port int) error {
 	}
 	resp, err := ntfyClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("sem conexão com o ntfy (%v)", err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 300))
+		return fmt.Errorf("o ntfy recusou (%d): %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
 	return nil
 }
 
 // enquanto o controle pelo celular estiver ligado: mantém a caixa postal em dia
 func (r *remoteApp) addrLoop(ctx context.Context) {
-	last, lastAt := "", time.Time{}
+	last, lastAt, failed := "", time.Time{}, false
 	for {
 		r.mu.RLock()
 		port := r.cfg.Port
@@ -85,8 +91,13 @@ func (r *remoteApp) addrLoop(ctx context.Context) {
 			if err := r.addrPublish(ips, port); err == nil {
 				if last != "" && key != last {
 					r.addLog("O IP do PC mudou: o atalho do celular já sabe o novo")
+				} else if last == "" {
+					r.addLog("Endereço do PC anotado pro atalho do celular ✓ (" + ips[0] + ")")
 				}
-				last, lastAt = key, time.Now()
+				last, lastAt, failed = key, time.Now(), false
+			} else if !failed {
+				r.addLog("Não deu pra anotar o endereço do PC: " + err.Error())
+				failed = true
 			}
 		}
 		select {

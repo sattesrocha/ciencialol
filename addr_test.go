@@ -22,8 +22,8 @@ func TestStableLinkAndAddrPublish(t *testing.T) {
 	defer ns.Close()
 	r := &remoteApp{}
 	r.cfg = rmConfig{Port: 8787, Token: strings.Repeat("ab", 16), AddrTopic: "clola-abcdefghij", Ntfy: rmNtfy{Server: ns.URL}}
-	l := r.stableLink("i")
-	if !strings.HasPrefix(l, stableBase+"#clola-abcdefghij."+strings.Repeat("ab", 16)) || !strings.HasSuffix(l, "&i") {
+	l := r.stableLink("a")
+	if !strings.HasPrefix(l, stableBase+"#clola-abcdefghij."+strings.Repeat("ab", 16)) || !strings.HasSuffix(l, "&a") {
 		t.Fatalf("link fixo errado: %s", l)
 	}
 	if !strings.Contains(l, "&s=") { // servidor próprio vai junto
