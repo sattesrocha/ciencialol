@@ -874,21 +874,17 @@ func (r *remoteApp) handler() http.Handler {
 			return
 		}
 		ip, _, _ := net.SplitHostPort(req.RemoteAddr)
-		if t := req.URL.Query().Get("t"); t != "" { // primeiro acesso pelo link: grava cookie e limpa a URL
+		// Primeiro acesso pelo link: grava o cookie e já mostra a página (sem redirecionar). Um redirecionamento
+		// aqui fazia o iPhone não mandar o cookie quando o link veio do atalho fixo (site → PC).
+		t := req.URL.Query().Get("t")
+		if t != "" {
 			if !tokEq(t, r.token()) {
 				r.tooManyFails(ip, true)
 				http.Error(w, "Link inválido ou antigo. Abra o link novo mostrado no Ciência LOL.", http.StatusUnauthorized)
 				return
 			}
-			http.SetCookie(w, &http.Cookie{Name: "clr", Value: t, Path: "/", MaxAge: 60 * 60 * 24 * 365, HttpOnly: true, SameSite: http.SameSiteLaxMode}) // Lax: o link vem do site do atalho (github.io); com Strict o navegador não manda o cookie depois do redirect
-			dest := "/"
-			if req.URL.Query().Get("go") == "ntfy" { // QR do ntfy: abre direto na parte de assinar
-				dest = "/#ntfy"
-			}
-			http.Redirect(w, req, dest, http.StatusFound)
-			return
-		}
-		if !r.authed(req) {
+			http.SetCookie(w, &http.Cookie{Name: "clr", Value: t, Path: "/", MaxAge: 60 * 60 * 24 * 365, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		} else if !r.authed(req) {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Abra o link (ou o QR code) mostrado no Ciência LOL, na aba Celular.")
@@ -897,6 +893,7 @@ func (r *remoteApp) handler() http.Handler {
 		b, _ := remoteFS.ReadFile("remote/index.html")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://ddragon.leagueoflegends.com; font-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; manifest-src 'self'")
 		w.Write(b)
 	})

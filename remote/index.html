@@ -285,6 +285,8 @@
 </nav>
 
 <script>
+// veio pelo link com a chave: limpa a URL (a chave já ficou guardada no cookie)
+if (location.search) { const q = new URLSearchParams(location.search); history.replaceState(null, '', '/' + (q.get('go') === 'ntfy' ? '#ntfy' : location.hash)); }
 const $ = id => document.getElementById(id);
 let champs = [], byId = {}, ddVer = '', state = null, auto = null, pcOnline = true;
 let selected = 0, lastActionId = 0, prevPhase = '', tab = 'partida';

@@ -154,7 +154,7 @@ func TestRemoteHTTPSecurity(t *testing.T) {
 	}
 	// link com token vira cookie
 	w := call("GET", "/?t="+tok, "192.168.0.20:5555", nil, "")
-	if w.Code != 302 || !strings.Contains(w.Header().Get("Set-Cookie"), "clr="+tok) || !strings.Contains(w.Header().Get("Set-Cookie"), "HttpOnly") {
+	if w.Code != 200 || !strings.Contains(w.Header().Get("Set-Cookie"), "clr="+tok) || !strings.Contains(w.Header().Get("Set-Cookie"), "HttpOnly") {
 		t.Fatalf("link devia gravar cookie: %d %q", w.Code, w.Header().Get("Set-Cookie"))
 	}
 	// pedido de outro site (Origin diferente) é recusado
