@@ -3521,7 +3521,7 @@ function openPending(){
       <div class="pb"><button class="btn sm gold" data-pok="${esc(c.id)}">✓ Aprovar</button><button class="btn sm" data-pno="${esc(c.id)}" style="color:var(--red)">✗ Recusar</button></div></div>`).join("")
       : `<div class="empty">Nada esperando aprovação 🎉</div>`}</div>`);
   $("#modal .pendwrap").onclick=async e=>{ const ok=e.target.closest("[data-pok]"), no=e.target.closest("[data-pno]"); if(!ok&&!no) return;
-    const id=(ok||no).dataset[ok?"pok":"pno"]; const c=(G.pending||{})[id]; if(!c) return; (ok||no).disabled=true;
+    const id=(ok||no).dataset[ok?"pok":"pno"]; const c=pendingList().find(x=>x.id===id); if(!c){ toast("Essa ciência não está mais na lista"); openPending(); return; } (ok||no).disabled=true;
     try{ if(ok) await staffPublish({t:"c", id, ts:c.ts, c:cleanC(c)}); else await staffPublish({t:"r", id, ts:c.ts});
       toast(ok?`📚 ${c.nome} entrou na biblioteca`:`Recusada: ${c.nome}`); }catch(err){ toast("Não deu: "+(err.message||err)); }
     refreshPendBtn(); refreshLibIfOpen(); openPending(); };
