@@ -127,6 +127,7 @@ type rmView struct {
 	Imported    bool           `json:"imported"`           // build da ciência já foi pro LoL nesta seleção
 	NtfyLink    string         `json:"ntfyLink,omitempty"` // ntfy://… pra assinar com um toque (página do celular)
 	NtfyTopic   string         `json:"ntfyTopic,omitempty"`
+	Stable      string         `json:"stable,omitempty"` // link fixo pro atalho (só pra quem já entrou)
 	Log         []string       `json:"log"`
 }
 
@@ -144,8 +145,10 @@ type rmConfig struct {
 	Enabled bool   `json:"enabled"`
 	Port    int    `json:"port"`
 	Token   string `json:"token"`
-	Auto    rmAuto `json:"auto"`
-	Ntfy    rmNtfy `json:"ntfy"`
+	// caixa postal do endereço (atalho fixo do celular)
+	AddrTopic string `json:"addrTopic"`
+	Auto      rmAuto `json:"auto"`
+	Ntfy      rmNtfy `json:"ntfy"`
 }
 
 type remoteApp struct {
@@ -167,6 +170,7 @@ type remoteApp struct {
 	fails     map[string][]time.Time // tentativas com token errado por IP
 	// avisos pelo ntfy
 	ntfyStop          context.CancelFunc
+	addrStop          context.CancelFunc
 	rcCode, pkCode    string // códigos de uso único dos botões da notificação
 	pkAction, pkChamp int
 	rcSeen            bool // já avisou desta fila
@@ -187,6 +191,9 @@ func remoteInit(dir string) {
 	}
 	if len(r.cfg.Token) < 32 {
 		r.cfg.Token = newRemoteToken()
+	}
+	if r.cfg.AddrTopic == "" {
+		r.cfg.AddrTopic = randTopic("clola-")
 	}
 	r.save()
 	if r.cfg.Ntfy.On {
@@ -731,6 +738,13 @@ func (r *remoteApp) viewNow() rmView {
 		v.Ciencia = &c
 	}
 	v.Imported = r.imported
+	if r.cfg.Enabled && r.cfg.AddrTopic != "" { // montado aqui (já com a trava): não chama stableLink
+		v.Stable = stableBase + "#" + r.cfg.AddrTopic + "." + r.cfg.Token
+		if r.cfg.Ntfy.Server != "" && r.cfg.Ntfy.Server != ntfyDefaultServer {
+			v.Stable += "&s=" + url.QueryEscape(r.cfg.Ntfy.Server)
+		}
+		v.Stable += "&i"
+	}
 	if r.cfg.Ntfy.On && r.cfg.Ntfy.Topic != "" {
 		srv := r.cfg.Ntfy.Server
 		if srv == "" {
@@ -763,10 +777,14 @@ func (r *remoteApp) startServer() error {
 		return fmt.Errorf("a porta %d está ocupada por outro programa", port)
 	}
 	srv := &http.Server{Handler: r.handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
+	r.addrEnsureTopic()
+	ctx, cancel := context.WithCancel(context.Background())
 	r.mu.Lock()
 	r.srv = srv
+	r.addrStop = cancel
 	r.mu.Unlock()
 	go func() { _ = srv.Serve(ln) }()
+	go r.addrLoop(ctx)
 	r.addLog("Controle pelo celular ligado na porta " + strconv.Itoa(port))
 	return nil
 }
@@ -775,6 +793,10 @@ func (r *remoteApp) stopServer() {
 	r.mu.Lock()
 	srv := r.srv
 	r.srv = nil
+	if r.addrStop != nil {
+		r.addrStop()
+		r.addrStop = nil
+	}
 	r.mu.Unlock()
 	if srv != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -1052,7 +1074,8 @@ type rmInfo struct {
 	Enabled bool       `json:"enabled"`
 	Port    int        `json:"port"`
 	Links   []string   `json:"links"`
-	QR      string     `json:"qr"` // data:image/png do primeiro link
+	QR      string     `json:"qr"` // data:image/png do link fixo
+	Stable  string     `json:"stable"`
 	View    rmView     `json:"view"`
 	Ntfy    rmNtfyInfo `json:"ntfy"`
 }
@@ -1067,7 +1090,8 @@ func (r *remoteApp) info() rmInfo {
 			in.Links = append(in.Links, fmt.Sprintf("http://%s:%d/?t=%s", ip, port, tok))
 		}
 		if len(in.Links) > 0 {
-			if png, err := qrcode.Encode(in.Links[0], qrcode.Medium, 320); err == nil {
+			in.Stable = r.stableLink("i")
+			if png, err := qrcode.Encode(in.Stable, qrcode.Medium, 320); err == nil {
 				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 			}
 		}

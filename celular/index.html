@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ciência LOL">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../ui/img/logo.png">
+<link rel="apple-touch-icon" href="../ui/img/logo.png">
+<title>Ciência LOL</title>
+<style>
+  @font-face{font-family:Cinzel;src:url(../ui/fonts/cinzel.ttf) format("truetype");font-weight:400 900;font-display:swap}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#070b14;color:#eef2f8;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{background:radial-gradient(800px 500px at 50% -10%,#14223d,transparent 60%),#070b14;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .box{width:100%;max-width:420px;text-align:center}
+  .logo{width:84px;height:84px;border-radius:22px;box-shadow:0 10px 40px rgba(200,170,110,.35)}
+  h1{font:700 24px/1.2 Cinzel,Georgia,serif;margin:16px 0 6px;background:linear-gradient(180deg,#fff6e0,#c8aa6e);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p{color:#8d9ab0;margin:6px 0}
+  .card{background:linear-gradient(180deg,#16213a,#0f1726);border:1px solid #233049;border-radius:20px;padding:18px;margin-top:20px;text-align:left}
+  ol{margin:8px 0 0;padding-left:22px;color:#c9d3e3}
+  li{margin:6px 0}
+  b{color:#f0e6d2}
+  .btn{display:block;width:100%;margin-top:18px;padding:15px;border:0;border-radius:16px;font:700 16px system-ui,sans-serif;background:linear-gradient(180deg,#e3c98f,#b8955a);color:#1a1206;cursor:pointer}
+  .spin{width:44px;height:44px;margin:22px auto 0;border-radius:50%;border:4px solid #233049;border-top-color:#0ac8b9;animation:r .9s linear infinite}
+  @keyframes r{to{transform:rotate(1turn)}}
+  .err{color:#ffb4bf}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="box">
+  <img class="logo" src="../ui/img/logo.png" alt="">
+  <h1>Ciência LOL</h1>
+
+  <!-- primeira vez (veio pelo QR code): criar o atalho -->
+  <div id="install" hidden>
+    <p>Crie o atalho agora. Ele continua funcionando mesmo se o endereço do PC mudar.</p>
+    <div class="card"><ol id="steps"></ol></div>
+    <button class="btn" id="go">Abrir agora</button>
+  </div>
+
+  <!-- atalho: procurando o PC -->
+  <div id="finding" hidden>
+    <p id="msg">Procurando o seu PC…</p>
+    <div class="spin" id="spin"></div>
+    <button class="btn" id="retry" hidden>Tentar de novo</button>
+  </div>
+</div>
+<script>
+// O link é: .../celular/#<caixa>.<chave>&i|&n  (a parte depois do # nunca sai do celular)
+const h = location.hash.slice(1).split('&');
+const [box, key] = (h[0] || '').split('.');
+const flags = new Set(h.slice(1).filter(x => !x.startsWith('s=')));
+const srvP = h.find(x => x.startsWith('s='));
+const SERVER = srvP ? decodeURIComponent(srvP.slice(2)) : 'https://ntfy.sh';
+const $ = id => document.getElementById(id);
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const valid = /^clola-[a-z0-9]{10,40}$/.test(box || '') && /^[a-f0-9]{32}$/.test(key || '');
+
+async function find() {
+  $('install').hidden = true; $('finding').hidden = false; $('retry').hidden = true; $('spin').hidden = false;
+  $('msg').textContent = 'Procurando o seu PC…'; $('msg').className = '';
+  if (!valid) return fail('Este atalho está incompleto. Leia de novo o QR code na aba Celular do Ciência LOL.');
+  try {
+    const r = await fetch(`${SERVER}/${box}/json?poll=1&since=24h`, {cache:'no-store', referrerPolicy:'no-referrer'});
+    const lines = (await r.text()).trim().split('\n').filter(Boolean);
+    let a = null;
+    for (const l of lines) { try { const m = JSON.parse(l); if (m.event === 'message') a = JSON.parse(m.message); } catch {} }
+    const ip = a && (a.ips || [])[0], port = a && +a.port;
+    if (!ip || !/^\d{1,3}(\.\d{1,3}){3}$/.test(ip) || !(port > 0 && port < 65536)) {
+      return fail('Não achei o PC. Abra o Ciência LOL no PC e ligue o Controle pelo celular (aba Celular).');
+    }
+    location.replace(`http://${ip}:${port}/?t=${key}` + (flags.has('n') ? '&go=ntfy' : ''));
+  } catch (e) {
+    fail('Sem internet agora. Confira a conexão do celular e tente de novo.');
+  }
+}
+function fail(t) { $('msg').textContent = t; $('msg').className = 'err'; $('spin').hidden = true; $('retry').hidden = false; }
+$('retry').onclick = find;
+$('go').onclick = find;
+
+if (flags.has('i')) {
+  // tira o "&i" do endereço antes de criar o atalho: o atalho abre direto no PC
+  history.replaceState(null, '', location.pathname + '#' + h.filter(x => x !== 'i').join('&'));
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) find();
+  else {
+    $('steps').innerHTML = ios
+      ? '<li>Toque em <b>Compartilhar</b> (o quadrado com a seta, embaixo).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li><li>Pronto: abra sempre pelo ícone do <b>Ciência LOL</b>.</li>'
+      : '<li>Toque no menu <b>⋮</b> do navegador (em cima, à direita).</li><li>Escolha <b>Adicionar à tela inicial</b> e confirme.</li><li>Pronto: abra sempre pelo ícone do <b>Ciência LOL</b>.</li>';
+    $('install').hidden = false;
+  }
+} else find();
+</script>
+</body>
+</html>

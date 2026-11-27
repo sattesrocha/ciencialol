@@ -243,8 +243,8 @@
     </div>
     <div class="card" id="installCard">
       <p class="label">Usar como app</p>
-      <div class="muted">Coloque o Ciência LOL na tela inicial, com ícone próprio:</div>
-      <ol class="steps" id="installSteps"></ol>
+      <div class="muted">Crie o atalho do Ciência LOL na tela inicial. Ele continua funcionando mesmo se o endereço do PC mudar.</div>
+      <a id="installLink" href="#" style="text-decoration:none"><span class="btn gold full" style="margin-top:12px">📲 Criar atalho na tela inicial</span></a>
     </div>
     <div class="card">
       <p class="label">O que aconteceu</p>
@@ -479,14 +479,12 @@ function renderNtfy(s) {
     history.replaceState(null, '', '/');
   }
 }
-(function installHelp() {
-  const ios = IOS;
+function renderInstall(s) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-  if (standalone) { $('installCard').hidden = true; return; }
-  $('installSteps').innerHTML = ios
-    ? '<li>Abra esta página no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> (quadrado com seta).</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li>'
-    : '<li>Toque no menu <b>⋮</b> do Chrome.</li><li>Escolha <b>Adicionar à tela inicial</b>.</li><li>Abra pelo ícone do Ciência LOL.</li>';
-})();
+  // o atalho tem que ser criado pelo link fixo (o deste endereço quebra se o IP do PC mudar)
+  $('installCard').hidden = !!standalone || !s.stable;
+  if (s.stable) $('installLink').href = s.stable;
+}
 
 // ---------- estado ----------
 function hero(s) {
@@ -554,6 +552,7 @@ function render() {
 
   renderCiencia(s);
   renderNtfy(s);
+  renderInstall(s);
   $('log').textContent = (s.log||[]).slice().reverse().join('\n') || 'Nada ainda.';
 
   const cs = s.champSelect;

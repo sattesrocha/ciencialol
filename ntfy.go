@@ -401,7 +401,8 @@ func (r *remoteApp) ntfyInfo() rmNtfyInfo {
 		ips := localIPv4s()
 		in.NeedServer = !en || len(ips) == 0
 		if !in.NeedServer {
-			if png, err := qrcode.Encode(fmt.Sprintf("http://%s:%d/?t=%s&go=ntfy", ips[0], port, tok), qrcode.Medium, 320); err == nil {
+			_, _ = port, tok
+			if png, err := qrcode.Encode(r.stableLink("n"), qrcode.Medium, 320); err == nil {
 				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 			}
 		}
