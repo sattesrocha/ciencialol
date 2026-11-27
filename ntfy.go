@@ -119,6 +119,12 @@ var ntfyClient = &http.Client{Timeout: 10 * time.Second}
 
 func (r *remoteApp) ntfySend(m ntfyMsg) error {
 	n := r.ntfyCfg()
+	r.mu.RLock()
+	retired := r.retired
+	r.mu.RUnlock()
+	if retired {
+		return errors.New("outra janela do Ciência LOL está cuidando dos avisos")
+	}
 	if n.Topic == "" {
 		return errors.New("avisos no celular desligados")
 	}

@@ -153,6 +153,7 @@ type rmConfig struct {
 
 type remoteApp struct {
 	mu        sync.RWMutex
+	retired   bool // outra janela do Ciência LOL assumiu: esta para de agir e de avisar
 	path      string
 	cfg       rmConfig
 	conn      *lcuConn
@@ -395,6 +396,12 @@ func (r *remoteApp) ensureLoop() {
 }
 
 func (r *remoteApp) tick() {
+	r.mu.RLock()
+	retired := r.retired
+	r.mu.RUnlock()
+	if retired {
+		return
+	}
 	var phase string
 	if err := r.getJSON("/lol-gameflow/v1/gameflow-phase", &phase); err != nil {
 		r.mu.Lock()
@@ -773,7 +780,16 @@ func (r *remoteApp) startServer() error {
 	port := r.cfg.Port
 	r.mu.Unlock()
 	ln, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	if err != nil && r.askHandoff(port) { // um Ciência LOL antigo ainda aberto: ele solta a porta pra este
+		for i := 0; i < 20 && err != nil; i++ {
+			time.Sleep(250 * time.Millisecond)
+			ln, err = net.Listen("tcp", ":"+strconv.Itoa(port))
+		}
+	}
 	if err != nil {
+		if r.isOldCiencia(port) {
+			return fmt.Errorf("outro Ciência LOL aberto neste PC está usando o controle do celular. Feche as outras janelas do Ciência LOL")
+		}
 		return fmt.Errorf("a porta %d está ocupada por outro programa", port)
 	}
 	srv := &http.Server{Handler: r.handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second}
@@ -804,6 +820,29 @@ func (r *remoteApp) stopServer() {
 		_ = srv.Shutdown(ctx)
 		r.addLog("Controle pelo celular desligado")
 	}
+}
+
+// pede pro Ciência LOL que já está na porta (mesma chave, mesmo PC) soltar o controle
+func (r *remoteApp) askHandoff(port int) bool {
+	req, _ := http.NewRequest("POST", "http://127.0.0.1:"+strconv.Itoa(port)+"/api/handoff", nil)
+	req.Header.Set("X-Token", r.token())
+	resp, err := (&http.Client{Timeout: 2 * time.Second}).Do(req)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode == 200
+}
+
+// a porta está com uma versão antiga do Ciência LOL (que não sabe soltar)?
+func (r *remoteApp) isOldCiencia(port int) bool {
+	resp, err := (&http.Client{Timeout: 2 * time.Second}).Get("http://127.0.0.1:" + strconv.Itoa(port) + "/manifest.webmanifest")
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 400))
+	return strings.Contains(string(b), "Ciência LOL")
 }
 
 // só aparelhos da rede local, do Tailscale (100.64.0.0/10) ou deste PC
@@ -940,6 +979,26 @@ func (r *remoteApp) handler() http.Handler {
 		})
 	}
 	ok := map[string]bool{"ok": true}
+	// outra janela do Ciência LOL (versão nova) neste PC pediu o controle do celular: solta a porta
+	api("/api/handoff", true, func(w http.ResponseWriter, req *http.Request) (any, error) {
+		host, _, _ := net.SplitHostPort(req.RemoteAddr)
+		if ip := net.ParseIP(host); ip == nil || !ip.IsLoopback() {
+			return nil, fmt.Errorf("só deste PC")
+		}
+		go func() {
+			time.Sleep(200 * time.Millisecond)
+			r.mu.Lock()
+			r.retired = true
+			if r.ntfyStop != nil {
+				r.ntfyStop()
+				r.ntfyStop = nil
+			}
+			r.mu.Unlock()
+			r.stopServer()
+			r.addLog("Outra janela do Ciência LOL assumiu o controle pelo celular")
+		}()
+		return ok, nil
+	})
 	type pickBody struct{ ActionID, ChampionID int }
 	readPick := func(req *http.Request) (pickBody, error) {
 		var b pickBody

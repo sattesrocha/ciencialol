@@ -4,17 +4,17 @@
   "RT_VERSION": {
     "#1": {
       "0000": {
-        "fixed": { "file_version": "2.86.0.0", "product_version": "2.86.0.0" },
+        "fixed": { "file_version": "2.87.0.0", "product_version": "2.87.0.0" },
         "info": {
           "0416": {
             "CompanyName": "Megabrain",
             "FileDescription": "Ciência LOL",
-            "FileVersion": "2.86",
+            "FileVersion": "2.87",
             "InternalName": "CienciaLOL",
             "LegalCopyright": "© 2026 Megabrain",
             "OriginalFilename": "CienciaLOL.exe",
             "ProductName": "Ciência LOL",
-            "ProductVersion": "2.86 alpha"
+            "ProductVersion": "2.87 alpha"
           }
         }
       }
