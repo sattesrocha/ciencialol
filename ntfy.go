@@ -212,7 +212,7 @@ func (r *remoteApp) onReadyCheck(auto bool) {
 	if o := r.openBtn(); o != nil {
 		acts = append(acts, *o)
 	}
-	r.notify(ntfyMsg{Title: "Partida encontrada!", Message: "Aceite antes do tempo acabar.", Priority: 5, Tags: []string{"crossed_swords"}, Actions: acts})
+	r.notify(ntfyMsg{Title: "Partida encontrada!", Message: "Toque pra abrir o Ciência LOL, ou aceite por aqui.", Priority: 5, Tags: []string{"crossed_swords"}, Actions: acts})
 }
 
 func (r *remoteApp) onMyTurn(cs *rmChampSelect, a rmAuto) {
