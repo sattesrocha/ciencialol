@@ -3161,7 +3161,7 @@ function openDetail(id){
     if(STAFF){ try{ await staffPublish({t:"o", id, ts:Date.now(), del:1}); }catch(e){ toast("Não deu pra publicar: "+(e.message||e)); return; } toast("Build original restaurada pra todos"); }
     else { delete S.overrides[id]; const r=recObj(libRecs().o[id]||{d:"null"}); if(r) applyRec(r); save(); toast("Correção deste PC desfeita"); }
     openDetail(id); };
-  if($("#subBtn")) $("#subBtn").onclick=()=>{ S.subs=S.subs||{}; S.subs[id]=Date.now(); save(); G.push&&G.push(); toast("Enviada pra aprovação ⏳"); openDetail(id); };
+  if($("#subBtn")) $("#subBtn").onclick=()=>{ S.subs=S.subs||{}; S.subs[id]=Date.now(); save(); G.push&&G.push(); refreshPendBtn(); toast("Enviada pra aprovação ⏳"); openDetail(id); };
   if($("#unsubBtn")) $("#unsubBtn").onclick=()=>{ if(S.subs) delete S.subs[id]; save(); G.push&&G.push(); toast("Envio cancelado"); openDetail(id); };
   if(c.custom){ $("#editBtn").onclick=()=>openForm(c); $("#delBtn").onclick=async()=>{ const inLib=!!libRecs().c[id];
     if(await uiConfirm(STAFF&&inLib ? "Excluir essa ciência?\n\nEla sai da biblioteca de todos." : inLib ? "Tirar essa ciência deste PC?\n\nEla continua na biblioteca dos outros (só a staff pode excluir de lá)." : "Excluir essa ciência?", {ok:"Excluir", danger:true})){
@@ -3299,7 +3299,7 @@ function openForm(c, pre){
     if(STAFF){ try{ await staffPublish({t:"c", id:obj.id, ts:obj.ts, c:cleanC(obj)}); toast("Ciência salva e publicada na biblioteca 📚"); }catch(e){ toast("Ciência salva, mas não deu pra publicar: "+(e.message||e)); } }
     else {
       const ask = await uiConfirm(c ? "Ciência salva neste PC.\n\nQuer enviar esta versão pra biblioteca de todo mundo? Alguém da staff precisa aprovar antes." : "Ciência salva neste PC 🧪\n\nQuer enviar pra biblioteca de todo mundo? Alguém da staff precisa aprovar. Enquanto isso, ela já fica pra você usar aqui.", {ok:"Enviar pra aprovação", cancel:"Deixar só neste PC", icon:"📚"});
-      S.subs=S.subs||{}; if(ask) S.subs[obj.id]=obj.ts; else delete S.subs[obj.id]; save(); G.push&&G.push();
+      S.subs=S.subs||{}; if(ask) S.subs[obj.id]=obj.ts; else delete S.subs[obj.id]; save(); G.push&&G.push(); refreshPendBtn();
       toast(ask ? "Enviada pra aprovação ⏳" : "Ciência salva só neste PC 💻");
     }
     if(duoNext){ const nx = { ...duoNext, syn:{ g:syn.g, with:obj.id } }; openForm(null, nx); toast(`Agora a do ${nx.champ} 🤝`); return; }
@@ -3506,7 +3506,9 @@ async function loadMatchFull(gid, d){
   box.innerHTML=`<h5><span class="t">Partida completa</span> · ${mgTime(g.dur)} · do cliente do LoL</h5>`+g.teams.map(team).join("");
 }
 // envios dos usuários esperando a staff
-function pendingList(){ const P=(typeof G!=="undefined"&&G.pending)||{}; const L=libRecs();
+function pendingList(){ const P={...((typeof G!=="undefined"&&G.pending)||{})}; const L=libRecs();
+  // as enviadas deste mesmo PC também aparecem (a nuvem só lista as dos outros)
+  (S.custom||[]).forEach(c=>{ if((S.subs||{})[c.id] && (!P[c.id] || (P[c.id].ts||0)<(c.ts||0))) P[c.id]={...cleanC(c), by:c.by||meName()}; });
   return Object.values(P).filter(c=>{ const lr=recObj(L.c[c.id]||{d:"null"}), rj=recObj(L.r[c.id]||{d:"null"});
     return !(lr && (+lr.ts||0)>=c.ts) && !(rj && (+rj.ts||0)>=c.ts); }).sort((a,b)=>b.ts-a.ts); }
 function refreshPendBtn(){ const b=$("#pendBtn"); if(!b) return; const n=STAFF?pendingList().length:0; b.style.display=STAFF?"":"none"; $("#pendN").textContent=n?`(${n})`:""; b.classList.toggle("gold-o", n>0); }
