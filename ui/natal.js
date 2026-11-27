@@ -399,6 +399,7 @@
     XM.set(want); renderMus(); XM.music.sync();
     ratoAoAbrir();
   };
+  XM.art = { TREE, SLEIGH, VILA, VILA2, BAUBLE, LUZES }; // desenhos (usados também pra gerar os wallpapers)
   window.XM = XM;
   // aplica já na abertura, antes de mostrar a janela
   try{ if(window.__XMON) XM.set(true); }catch(e){ console.error(e); }

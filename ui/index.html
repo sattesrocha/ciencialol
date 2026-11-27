@@ -739,6 +739,7 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
 .wallprev{position:relative;aspect-ratio:16/9;background:#000}
 .wallprev img,.wallprev video{width:100%;height:100%;object-fit:cover;display:block}
 .wallbadge{position:absolute;top:10px;right:10px;font-size:10.5px;font-weight:800;letter-spacing:1.5px;padding:4px 9px;border-radius:999px;background:rgba(0,0,0,.6);color:#ffb347;border:1px solid rgba(255,140,40,.5)}
+.wallbadge.xmb{color:#ff9aa1;border-color:rgba(255,79,94,.55)}
 .wallinfo{padding:16px 18px 18px}
 .wallinfo h3{margin:0 0 6px;font-family:Cinzel,Georgia,serif;color:var(--gold2);font-size:19px}
 .wallinfo p{margin:0 0 14px;color:var(--muted);line-height:1.55;font-size:13.5px}
@@ -1031,6 +1032,16 @@ a.lnk{color:var(--gold);cursor:pointer;text-decoration:underline}
     <section class="view" id="v-wallpaper">
       <div class="head"><div><h2>Wallpaper</h2><p>Papéis de parede do Ciência LOL pro seu PC (2560×1440, ficam bons em qualquer tela).</p></div></div>
       <div class="walls">
+        <div class="wallcard">
+          <div class="wallprev"><video src="wall/ciencia-natal-branco-animado.mp4" poster="wall/ciencia-natal-branco.jpg" autoplay muted loop playsinline></video><span class="wallbadge xmb">ANIMADO</span></div>
+          <div class="wallinfo"><h3>Natal Branco ❄️</h3><p>Tudo nevado: árvore iluminada, pisca-pisca, neve caindo, montanhas e o trenó do Papai Noel. O vídeo animado funciona no <b>Lively Wallpaper</b> (grátis na Microsoft Store) ou no <b>Wallpaper Engine</b>; a versão parada vai direto no Windows.</p>
+            <div class="wallbtns"><button class="btn gold" data-wsave="ciencia-natal-branco-animado.mp4">🎬 Salvar vídeo animado</button><button class="btn" data-wset="ciencia-natal-branco.jpg">🖼️ Usar versão parada</button><button class="btn" data-wsave="ciencia-natal-branco.jpg">💾 Salvar imagem</button></div></div>
+        </div>
+        <div class="wallcard">
+          <div class="wallprev"><video src="wall/ciencia-natal-noite-animado.mp4" poster="wall/ciencia-natal-noite.jpg" autoplay muted loop playsinline></video><span class="wallbadge xmb">ANIMADO</span></div>
+          <div class="wallinfo"><h3>Natal Noite 🌙</h3><p>Noite de Natal com aurora, lua cheia, vila nevada de janelas acesas e o trenó passando na frente da lua. Mesmo esquema: vídeo animado no Lively ou Wallpaper Engine, ou a versão parada direto no Windows.</p>
+            <div class="wallbtns"><button class="btn gold" data-wsave="ciencia-natal-noite-animado.mp4">🎬 Salvar vídeo animado</button><button class="btn" data-wset="ciencia-natal-noite.jpg">🖼️ Usar versão parada</button><button class="btn" data-wsave="ciencia-natal-noite.jpg">💾 Salvar imagem</button></div></div>
+        </div>
         <div class="wallcard">
           <div class="wallprev"><img src="wall/ciencia-classico.png" alt="Wallpaper clássico" loading="lazy"></div>
           <div class="wallinfo"><h3>Clássico</h3><p>O visual de sempre do Ciência LOL: dourado e azul noturno.</p>
@@ -3819,6 +3830,7 @@ const NEWS = [
     ["❄️","<b>Dois estilos</b>: <b>Branco</b> (tudo nevado e claro) ou <b>Noite</b> (céu escuro com aurora e lua). A escolha fica na tela inicial, embaixo dos créditos."],
     ["🎵","<b>Músicas de Natal</b>: trilha de fundo própria (com volume no menu), música nova na Roleta do Noel e na roleta da prenda."],
     ["🐀","<b>Surpresa de Natal</b>: um convidado especial aparece ao abrir o app. Dá pra marcar \"Não mostrar mais\", e clicar na árvore do início chama ele de novo."],
+    ["🖼️","<b>Wallpapers de Natal</b>: na aba Wallpaper tem o Natal Branco e o Natal Noite, cada um em versão animada e parada."],
     ["🎁","<b>Efeitos natalinos</b>: o Sortear solta presentes e estrelas, o Ganhou solta presentes e o Perdeu ganha carvão."],
   ]},
   { id:"2026-11-01", date:"1º de novembro", items:[

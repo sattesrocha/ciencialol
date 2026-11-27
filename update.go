@@ -19,7 +19,7 @@ import (
 )
 
 // AppVersion é a versão deste executável. Suba a cada versão publicada.
-const AppVersion = "2.90"
+const AppVersion = "2.91"
 
 // ManifestDocID é um Google Doc fixo ("qualquer pessoa com o link") com duas linhas:
 //
