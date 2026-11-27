@@ -134,9 +134,10 @@
   // qual esboço (1: noite / 2: branco nevado). Enquanto escolhe: localStorage "xmvar"
   // estilo do Natal: "branco" (neve, claro; padrão) ou "noite"
   { let v; try{ v=localStorage.getItem("xmvar"); }catch(e){} if(v!=="1" && v!=="2") v = window.__XMVAR==="noite" ? "1" : "2"; XM.v2 = v==="2"; }
-  XM.esboco = n => { const was=XM.on; if(was) XM.set(false); XM.orig=new Map(); XM.v2 = n===2;
+  XM.esboco = n => { const was=XM.on; if(XM.music) XM.music.keep=true; // trocar o estilo não mexe na música
+    if(was) XM.set(false); XM.orig=new Map(); XM.v2 = n===2;
     try{ localStorage.setItem("xmvar", String(n)); }catch(e){} try{ S.opts.natalEstilo = n===2 ? "branco" : "noite"; save(); }catch(e){}
-    if(was) XM.set(true); renderEstilo(); };
+    if(was) XM.set(true); if(XM.music) XM.music.keep=false; renderEstilo(); };
   function styles(){ return [...document.querySelectorAll("style")].filter(s=>!s.dataset.hw); }
   function add(el, parent){ (parent||document.body).appendChild(el); XM.els.push(el); return el; }
   function mk(html){ const d=document.createElement("div"); d.innerHTML=html.trim(); return d.firstChild; }
@@ -275,26 +276,39 @@
 
   // ---------- sons (entram quando os arquivos existirem no app: snd/xm_*.mp3) ----------
   XM.has = { musica:false, roleta:false, prenda:false };
-  ["musica","roleta","prenda"].forEach(k=>{ try{ fetch("snd/xm_"+k+".mp3", {method:"HEAD"}).then(r=>{ XM.has[k]=r.ok; if(k==="musica") XM.music.sync(); }).catch(()=>{}); }catch(e){} });
+  [["musica","xm_musica1"],["roleta","xm_roleta"],["prenda","xm_prenda"]].forEach(([k,f])=>{ try{ fetch("snd/"+f+".mp3", {method:"HEAD"}).then(r=>{ XM.has[k]=r.ok; if(k==="musica") XM.music.sync(); }).catch(()=>{}); }catch(e){} });
   const ducks = new Set();
   const mv = () => { try{ return S.opts.xmMusic ?? 40; }catch(e){ return 40; } };
   const soundOn = () => { try{ return S.opts.sound!==false; }catch(e){ return true; } };
   const master = () => { try{ return Math.pow((S.opts.vol??70)/100, 1.8); }catch(e){ return .5; } };
+  // trilha de fundo: 3 músicas em sequência (sempre começa pela 1), dá pra pular e voltar
+  const FAIXAS = [{n:"xm_musica1", d:279.3},{n:"xm_musica2", d:175.5},{n:"xm_musica3", d:225.9}];
+  const nativo = () => typeof NSND!=="undefined" && NSND.ok && typeof nativeSound==="function";
   XM.music = {
-    a:null,
+    a:null, i:0, nextT:0, keep:false,
     // pausada (prenda, contagem, vídeo do rato): fica muda e continua de onde parou, sem recomeçar
     vol(){ return (XM.minimized || ducks.size) ? 0 : Math.min(1, master()*mv()/100); },
-    want(){ return XM.on && XM.has.musica && soundOn() && mv()>0 && (typeof NSND==="undefined" || NSND.done || !window.sndReady); },
+    want(){ return (XM.on || this.keep) && XM.has.musica && soundOn() && mv()>0 && (typeof NSND==="undefined" || NSND.done || !window.sndReady); },
     ramp(to, ms, done, a=this.a){ if(!a) return; clearInterval(a._ft); const from=+a.volume||0, t0=Date.now();
       a._ft=setInterval(()=>{ const k=Math.min(1,(Date.now()-t0)/ms); try{ a.volume=from+(to-from)*k; }catch(e){} if(k>=1){ clearInterval(a._ft); done&&done(); } }, 60); },
+    start(fadeMs=1500){
+      const f=FAIXAS[this.i]; clearTimeout(this.nextT);
+      let a;
+      if(nativo()){ a=nativeSound(f.n, 0, false); this.nextT=setTimeout(()=>this.go(1, true), f.d*1000+300); }
+      else { a=new Audio("snd/"+f.n+".mp3"); a.volume=0; a.onended=()=>{ if(this.a===a) this.go(1, true); }; a.play().catch(()=>{}); }
+      this.a=a; this.ramp(this.vol(), fadeMs); renderMus();
+    },
+    stopCur(ms=500){ clearTimeout(this.nextT); const a=this.a; this.a=null; if(a) this.ramp(0, ms, ()=>{ try{ a.pause(); }catch(e){} }, a); },
+    go(dir, auto=false){ // pula (+1) ou volta (-1) de música
+      this.i=(this.i+dir+FAIXAS.length)%FAIXAS.length;
+      if(!this.want()){ renderMus(); return; }
+      this.stopCur(auto?200:350); this.start(auto?800:600);
+    },
     sync(){
       if(this.want()){
-        if(!this.a){
-          if(typeof NSND!=="undefined" && NSND.ok && typeof nativeSound==="function") this.a=nativeSound("xm_musica", 0, true);
-          else { const a=new Audio("snd/xm_musica.mp3"); a.loop=true; a.volume=0; a.play().catch(()=>{}); this.a=a; }
-          this.ramp(this.vol(), 1500);
-        } else this.ramp(this.vol(), ducks.size ? 400 : 900);
-      } else if(this.a){ const a=this.a; this.a=null; this.ramp(0, 500, ()=>{ try{ a.pause(); }catch(e){} }, a); }
+        if(!this.a) this.start(1500);
+        else this.ramp(this.vol(), ducks.size ? 400 : 900);
+      } else if(this.a) this.stopCur(500);
       renderMus();
     },
   };
@@ -329,7 +343,7 @@
     const tocar=()=>{ rep.hidden=true; v.currentTime=0; v.muted=!soundOn(); v.volume=vol(); XM.duck(true,"rato");
       v.play().catch(()=>{ v.muted=true; v.play().catch(()=>{}); if(soundOn()) som.hidden=false; }); };
     som.onclick=()=>{ som.hidden=true; v.muted=false; v.volume=vol(); };
-    v.onended=()=>{ XM.duck(false,"rato"); rep.hidden=false; };
+    v.onended=()=>fechar(); // acabou o vídeo: fecha sozinho
     rep.onclick=tocar;
     const fechar=()=>{ try{ v.pause(); }catch(e){} XM.duck(false,"rato"); const no=el.querySelector("#xmRatoNo"); if(no && no.checked){ try{ S.opts.xmRatoOff=true; save(); }catch(e){} }
       el.classList.add("out"); setTimeout(()=>el.remove(), 350); document.removeEventListener("keydown", esc); };
@@ -354,19 +368,25 @@
 
   // controle da música no menu (só aparece quando a música existir)
   function renderMus(){
-    const box=document.getElementById("xmMusic"); if(!box) return;
-    box.style.display = XM.on && XM.has.musica ? "" : "none";
+    const box=document.getElementById("xmMusic"), pl=document.getElementById("xmPlayer"); if(!box) return;
+    const show = XM.on && XM.has.musica;
+    box.style.display = show ? "" : "none"; if(pl) pl.style.display = show ? "" : "none";
     const v=mv(), r=document.getElementById("xmMusVol"), t=document.getElementById("xmMusPct"), b=document.getElementById("xmMusMute");
     if(r && document.activeElement!==r){ r.value=v; } if(r) r.style.setProperty("--p", v+"%");
     if(t) t.textContent = v ? v+"%" : "mudo"; if(b) b.classList.toggle("off", !v);
+    const fx=document.getElementById("xmFaixa"); if(fx) fx.textContent = `Música ${XM.music.i+1} de ${FAIXAS.length}`;
   }
   function musicBtn(){
-    const tg=document.getElementById("xmToggle"); if(!tg || document.getElementById("xmMusic")) return;
+    const vb=document.querySelector(".volbar"); if(!vb || document.getElementById("xmMusic")) return;
+    // de cima pra baixo: trocar música, volume da música, volume geral
+    const pl=mk(`<div class="xmplayer" id="xmPlayer" title="Música de fundo do Natal"><button id="xmPrev" aria-label="Música anterior">⏮</button><span id="xmFaixa"></span><button id="xmNext" aria-label="Próxima música">⏭</button></div>`);
     const box=mk(`<div class="xmmusic" id="xmMusic" title="Volume da música de Natal"><button id="xmMusMute" aria-label="Ligar ou desligar a música">🎵</button><input type="range" id="xmMusVol" min="0" max="100" aria-label="Volume da música"><span id="xmMusPct"></span></div>`);
-    tg.insertAdjacentElement("afterend", box);
-    let last=30;
+    vb.parentNode.insertBefore(pl, vb); vb.parentNode.insertBefore(box, vb);
+    let last=40;
     document.getElementById("xmMusVol").oninput=e=>{ try{ S.opts.xmMusic=+e.target.value; save(); }catch(_){} XM.music.sync(); };
-    document.getElementById("xmMusMute").onclick=()=>{ try{ const v=mv(); if(v){ last=v; S.opts.xmMusic=0; } else S.opts.xmMusic=last||30; save(); }catch(_){} XM.music.sync(); };
+    document.getElementById("xmMusMute").onclick=()=>{ try{ const v=mv(); if(v){ last=v; S.opts.xmMusic=0; } else S.opts.xmMusic=last||40; save(); }catch(_){} XM.music.sync(); };
+    document.getElementById("xmPrev").onclick=()=>XM.music.go(-1);
+    document.getElementById("xmNext").onclick=()=>XM.music.go(1);
     renderMus();
   }
   const baseSet = XM.set;

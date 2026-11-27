@@ -243,3 +243,13 @@ html.xm2 .xm-rato{background:rgba(214,232,243,.7)}
 .xm-rato-foot label{display:flex;align-items:center;gap:7px;cursor:pointer}
 .xm-rato-foot .btn{margin-left:auto;background:linear-gradient(180deg,#fff7e0,#ecc25e);color:#5a0710!important;text-shadow:none!important;border-color:#fff3c8}
 .xm-hero{cursor:pointer}
+
+/* trocar a música de fundo (fica em cima do volume da música) */
+.xmplayer{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:5px 6px;border-radius:11px;border:1px solid #5a1a22;background:linear-gradient(90deg,rgba(255,79,94,.08),rgba(67,224,122,.06))}
+.xmplayer span{flex:1;text-align:center;font-size:12px;font-weight:600;color:var(--muted)}
+.xmplayer button{width:30px;height:26px;border-radius:8px;font-size:13px;line-height:1;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line2);transition:.15s}
+.xmplayer button:hover{border-color:#ff4f5e;color:#ff4f5e}
+html.xm2 .xmplayer,html.xm2 .xmmusic{border-color:#e4b9be;background:#fff}
+html.xm2 .xmplayer button{background:#f6fafc}
+html.xm .xmplayer{margin-top:auto}
+html.xm .xmmusic + .volbar{margin-top:0}
