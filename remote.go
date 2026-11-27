@@ -880,7 +880,7 @@ func (r *remoteApp) handler() http.Handler {
 				http.Error(w, "Link inválido ou antigo. Abra o link novo mostrado no Ciência LOL.", http.StatusUnauthorized)
 				return
 			}
-			http.SetCookie(w, &http.Cookie{Name: "clr", Value: t, Path: "/", MaxAge: 60 * 60 * 24 * 365, HttpOnly: true, SameSite: http.SameSiteStrictMode})
+			http.SetCookie(w, &http.Cookie{Name: "clr", Value: t, Path: "/", MaxAge: 60 * 60 * 24 * 365, HttpOnly: true, SameSite: http.SameSiteLaxMode}) // Lax: o link vem do site do atalho (github.io); com Strict o navegador não manda o cookie depois do redirect
 			dest := "/"
 			if req.URL.Query().Get("go") == "ntfy" { // QR do ntfy: abre direto na parte de assinar
 				dest = "/#ntfy"
