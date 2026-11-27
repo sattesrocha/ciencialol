@@ -81,6 +81,12 @@
 
 <div id="err"></div>
 
+<div class="card" id="ntCard" hidden>
+  <h2>Avisos com o celular bloqueado</h2>
+  <div class="muted" style="margin-bottom:10px">Com o app <b>ntfy</b> instalado, toque abaixo pra receber a fila e a sua vez mesmo com a tela desligada (funciona no 4G).</div>
+  <div class="row"><a id="ntLink" href="#" style="flex:1"><button class="primary" style="width:100%">🔔 Assinar no app ntfy</button></a><button id="ntCopy">Copiar tópico</button></div>
+</div>
+
 <!-- Ciência sorteada -->
 <div class="card" id="czCard" hidden>
   <h2>Sua ciência</h2>
@@ -325,6 +331,8 @@ function render() {
   }
 
   renderCiencia(s);
+  $('ntCard').hidden = !s.ntfyLink;
+  if (s.ntfyLink) $('ntLink').href = s.ntfyLink;
   const cs = s.champSelect;
   $('csCard').hidden = !cs;
   if (!cs) { lastActionId = 0; selected = 0; return; }
@@ -375,6 +383,12 @@ $('btnCzImport').onclick = async () => {
   $('btnCzImport').disabled = true;
   try { await api('/api/import', {}); } catch(e) { showErr(e); }
   $('btnCzImport').disabled = false;
+};
+
+$('ntCopy').onclick = async () => {
+  const t = state && state.ntfyTopic; if (!t) return;
+  try { await navigator.clipboard.writeText(t); $('ntCopy').textContent = 'Copiado ✓'; }
+  catch { prompt('Copie o tópico:', t); }
 };
 
 // log também fora da seleção

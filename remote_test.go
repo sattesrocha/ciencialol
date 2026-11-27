@@ -16,10 +16,19 @@ type fakeLoL struct {
 	mu       sync.Mutex
 	phase    string
 	accepted bool
-	timeLeft int64
+	timeLeft int64 // quanto faltava no instante "stamp" (como o LoL de verdade: não atualiza sozinho)
+	stamp    int64 // ms; 0 = agora
+	infinite bool
 	actType  string
 	locked   []int
 	hovered  []int
+}
+
+func (f *fakeLoL) stampNow() int64 {
+	if f.stamp == 0 {
+		return time.Now().UnixMilli()
+	}
+	return f.stamp
 }
 
 func (f *fakeLoL) handler(t *testing.T) http.HandlerFunc {
@@ -41,7 +50,7 @@ func (f *fakeLoL) handler(t *testing.T) http.HandlerFunc {
 				"myTeam":            []map[string]any{{"cellId": 0}, {"cellId": 1, "championId": 17}},
 				"theirTeam":         []map[string]any{{"cellId": 5}},
 				"actions":           [][]map[string]any{{{"id": 7, "actorCellId": 0, "isInProgress": true, "type": f.actType}}},
-				"timer":             map[string]any{"adjustedTimeLeftInPhase": f.timeLeft, "phase": "BAN_PICK"},
+				"timer":             map[string]any{"adjustedTimeLeftInPhase": f.timeLeft, "internalNowInEpochMs": f.stampNow(), "isInfinite": f.infinite, "phase": "BAN_PICK"},
 			})
 		case strings.HasSuffix(r.URL.Path, "pickable-champion-ids"):
 			w.Write([]byte(`[99,17,22]`)) // Alistar não está liberado
@@ -177,5 +186,60 @@ func TestAllowedRemoteIP(t *testing.T) {
 		if got := allowedRemoteIP(ip); got != want {
 			t.Errorf("%s: veio %v, esperava %v", ip, got, want)
 		}
+	}
+}
+
+// o LoL congela o tempo da seleção: "faltavam 30 s há 25 s" = faltam 5 s agora
+func TestRemoteAutoUsesRealTimeLeft(t *testing.T) {
+	f := &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 30000, stamp: time.Now().Add(-25 * time.Second).UnixMilli()}
+	r, done := newTestRemote(t, f)
+	defer done()
+	r.cfg.Auto.AutoSelect = true
+	r.cfg.Auto.BanList = []int{12}
+	r.tick()
+	if len(f.locked) != 1 || f.locked[0] != 12 {
+		t.Fatalf("faltando 5 s devia banir, baniu %v", f.locked)
+	}
+	// o mesmo "30 s" mas agora mesmo: não age
+	f.locked, f.hovered, f.stamp = nil, nil, 0
+	r.acted = map[int]time.Time{}
+	r.tick()
+	if len(f.locked) != 0 {
+		t.Fatalf("faltando 30 s não devia agir: %v", f.locked)
+	}
+}
+
+func TestRemoteAutoInfiniteTimerAndEmptyListExplained(t *testing.T) {
+	f := &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 0, infinite: true}
+	r, done := newTestRemote(t, f)
+	defer done()
+	r.cfg.Auto.AutoSelect = true
+	r.cfg.Auto.BanList = []int{12}
+	r.tick()
+	if len(f.locked) != 0 {
+		t.Fatal("seleção sem tempo: o automático não devia agir")
+	}
+	if l := strings.Join(r.logs, "\n"); !strings.Contains(l, "não tem tempo") {
+		t.Fatalf("devia explicar no registro: %s", l)
+	}
+	r2, done2 := newTestRemote(t, &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 20000})
+	defer done2()
+	r2.cfg.Auto.AutoSelect = true
+	r2.tick()
+	if l := strings.Join(r2.logs, "\n"); !strings.Contains(l, "lista de bans está vazia") {
+		t.Fatalf("devia avisar da lista vazia: %s", l)
+	}
+}
+
+func TestTimeLeftNow(t *testing.T) {
+	now := time.UnixMilli(1_000_000)
+	if v := timeLeftNow(30000, 1_000_000-25000, now); v != 5 {
+		t.Fatalf("esperava 5, veio %v", v)
+	}
+	if v := timeLeftNow(30000, 0, now); v != 30 {
+		t.Fatalf("sem instante devia usar 30, veio %v", v)
+	}
+	if v := timeLeftNow(3000, 1_000_000-9000, now); v != 0 {
+		t.Fatalf("não pode ficar negativo, veio %v", v)
 	}
 }

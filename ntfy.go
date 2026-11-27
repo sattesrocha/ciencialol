@@ -357,7 +357,8 @@ func (r *remoteApp) ntfyInfo() rmNtfyInfo {
 		if u.Scheme == "http" {
 			in.Link += "&secure=false"
 		}
-		if png, err := qrcode.Encode(in.Link, qrcode.Medium, 320); err == nil {
+		// a câmera do celular não entende links ntfy://: o QR leva só o nome do tópico (dá pra copiar e colar no app)
+		if png, err := qrcode.Encode(n.Topic, qrcode.Medium, 320); err == nil {
 			in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 		}
 	}

@@ -16,6 +16,7 @@ func TestRemoteDemoServer(t *testing.T) {
 	r, done := newTestRemote(t, f)
 	defer done()
 	r.cfg.Auto.PickList = []int{22}
+	r.cfg.Ntfy = rmNtfy{On: true, Topic: "clol-abcdefghijklmnopqrstuvwx", Reply: "clolr-x"}
 	r.setCiencia(&rmCiencia{Key: 99, Champ: "Lux", Nome: "Lux Tanque", Payload: "{}"})
 	go func() {
 		for {
@@ -25,5 +26,5 @@ func TestRemoteDemoServer(t *testing.T) {
 	}()
 	srv := &http.Server{Addr: "127.0.0.1:8799", Handler: r.handler()}
 	go srv.ListenAndServe()
-	time.Sleep(60 * time.Second)
+	time.Sleep(25 * time.Second)
 }

@@ -66,8 +66,10 @@ type rmSession struct {
 	MyTeam            []rmPlayer   `json:"myTeam"`
 	TheirTeam         []rmPlayer   `json:"theirTeam"`
 	Timer             struct {
-		AdjustedTimeLeftInPhase int64  `json:"adjustedTimeLeftInPhase"`
-		Phase                   string `json:"phase"`
+		AdjustedTimeLeftInPhase float64 `json:"adjustedTimeLeftInPhase"` // quanto faltava…
+		InternalNowInEpochMs    float64 `json:"internalNowInEpochMs"`    // …neste instante (o LoL não atualiza sozinho)
+		IsInfinite              bool    `json:"isInfinite"`              // partida personalizada: sem tempo
+		Phase                   string  `json:"phase"`
 	} `json:"timer"`
 }
 
@@ -95,6 +97,7 @@ type rmSlot struct {
 type rmChampSelect struct {
 	Phase     string      `json:"phase"`
 	TimeLeft  float64     `json:"timeLeft"`
+	Infinite  bool        `json:"infinite"`
 	MyAction  *rmMyAction `json:"myAction"`
 	MyChamp   int         `json:"myChamp"`
 	MyTeam    []rmSlot    `json:"myTeam"`
@@ -121,7 +124,9 @@ type rmView struct {
 	ChampSelect *rmChampSelect `json:"champSelect,omitempty"`
 	Auto        rmAuto         `json:"auto"`
 	Ciencia     *rmCiencia     `json:"ciencia,omitempty"`
-	Imported    bool           `json:"imported"` // build da ciência já foi pro LoL nesta seleção
+	Imported    bool           `json:"imported"`           // build da ciência já foi pro LoL nesta seleção
+	NtfyLink    string         `json:"ntfyLink,omitempty"` // ntfy://… pra assinar com um toque (página do celular)
+	NtfyTopic   string         `json:"ntfyTopic,omitempty"`
 	Log         []string       `json:"log"`
 }
 
@@ -455,6 +460,9 @@ func (r *remoteApp) tick() {
 				r.mu.Unlock()
 				if newTurn {
 					r.onMyTurn(cs, a)
+					if a.AutoSelect {
+						r.explainAuto(cs, a)
+					}
 				}
 			}
 			if a.AutoSelect {
@@ -484,7 +492,7 @@ func (r *remoteApp) buildChampSelect() (*rmChampSelect, error) {
 	if err := r.getJSON("/lol-champ-select/v1/session", &s); err != nil {
 		return nil, err
 	}
-	cs := &rmChampSelect{Phase: s.Timer.Phase, TimeLeft: float64(s.Timer.AdjustedTimeLeftInPhase) / 1000}
+	cs := &rmChampSelect{Phase: s.Timer.Phase, TimeLeft: timeLeftNow(s.Timer.AdjustedTimeLeftInPhase, s.Timer.InternalNowInEpochMs, time.Now()), Infinite: s.Timer.IsInfinite}
 	unavail := map[int]bool{}
 	for _, p := range s.MyTeam {
 		me := p.CellID == s.LocalPlayerCellID
@@ -537,9 +545,25 @@ func (r *remoteApp) pickOrder(a rmAuto) []int {
 	return out
 }
 
+// O LoL manda "faltavam X ms no instante T" e só atualiza quando algo muda na seleção.
+// O tempo que falta AGORA é X - (agora - T). Sem T (ou com relógio muito torto), usa X.
+func timeLeftNow(adjustedMs, internalNowMs float64, now time.Time) float64 {
+	left := adjustedMs
+	if internalNowMs > 0 {
+		el := float64(now.UnixMilli()) - internalNowMs
+		if el >= 0 && el < 10*60*1000 {
+			left = adjustedMs - el
+		}
+	}
+	if left < 0 {
+		left = 0
+	}
+	return left / 1000
+}
+
 func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 	act := cs.MyAction
-	if act == nil || cs.TimeLeft > float64(a.SecondsLeft) {
+	if act == nil || cs.Infinite || cs.TimeLeft > float64(a.SecondsLeft) {
 		return
 	}
 	r.mu.Lock() // no máximo uma tentativa a cada 2 s por ação
@@ -587,6 +611,25 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 		r.addLog("Automático: nenhum campeão da lista de bans está disponível")
 	} else {
 		r.addLog("Automático: nenhum campeão da lista de picks está disponível")
+	}
+}
+
+// no começo da vez: avisa no registro quando o automático não vai poder agir
+func (r *remoteApp) explainAuto(cs *rmChampSelect, a rmAuto) {
+	act := cs.MyAction
+	what := "escolher"
+	if act.Type == "ban" {
+		what = "banir"
+	}
+	switch {
+	case cs.Infinite:
+		r.addLog("Automático: esta seleção não tem tempo (partida personalizada), então ele não vai " + what)
+	case act.Type == "ban" && len(a.BanList) == 0:
+		r.addLog("Automático: sua lista de bans está vazia, então ele não vai banir")
+	case act.Type == "pick" && len(r.pickOrder(a)) == 0:
+		r.addLog("Automático: sem ciência sorteada e com a lista de picks vazia, então ele não vai escolher")
+	default:
+		r.addLog(fmt.Sprintf("Automático: vai %s quando faltarem %ds, se você não agir", what, a.SecondsLeft))
 	}
 }
 
@@ -662,6 +705,19 @@ func (r *remoteApp) viewNow() rmView {
 		v.Ciencia = &c
 	}
 	v.Imported = r.imported
+	if r.cfg.Ntfy.On && r.cfg.Ntfy.Topic != "" {
+		srv := r.cfg.Ntfy.Server
+		if srv == "" {
+			srv = ntfyDefaultServer
+		}
+		if u, err := url.Parse(srv); err == nil {
+			v.NtfyLink = "ntfy://" + u.Host + "/" + r.cfg.Ntfy.Topic + "?display=" + url.QueryEscape("Ciência LOL")
+			if u.Scheme == "http" {
+				v.NtfyLink += "&secure=false"
+			}
+		}
+		v.NtfyTopic = r.cfg.Ntfy.Topic
+	}
 	v.Log = append([]string(nil), r.logs...)
 	return v
 }
