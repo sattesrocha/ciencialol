@@ -1109,6 +1109,8 @@ async function loadChampIds(){
     CHAMPS = Object.values(pt.data||{}).map(c=>({id:c.id, key:+c.key, name:c.name})).sort((a,b)=>a.name.localeCompare(b.name,"pt"));
     CHAMPS.forEach(c=>CHAMP_BY_KEY[c.key]=c);
     if(typeof fillChampList==="function") fillChampList();
+    // controle pelo celular: nomes e ícones mesmo com o LoL fechado
+    if(window.remoteSetChamps) window.remoteSetChamps(DD, JSON.stringify(CHAMPS.map(c=>({id:c.key, name:c.name, alias:c.id})))).catch(()=>{});
     for(const k in CID_CACHE) delete CID_CACHE[k];
     refreshImages();
   }catch(e){}
@@ -3546,11 +3548,13 @@ async function renderCelular(){
       </div>
       <div class="card cel-card" style="margin-top:16px"><h3>🔔 Avisos no celular (ntfy)</h3>
         <label class="opt"><input type="checkbox" id="ntOn" ${inf.ntfy.on?"checked":""}><span class="sw"></span><span>${inf.ntfy.on?"Ligado":"Desligado"}<small>Notificação com botão Aceitar, mesmo com o celular bloqueado ou no 4G</small></span></label>
-        ${inf.ntfy.on?`<div class="cel-qr"><img src="${inf.ntfy.qr}" alt="QR code do ntfy"><div class="cel-links">
-            <b style="color:var(--text)">Uma vez só:</b><br>1. Instale o app <b>ntfy</b> no celular (Play Store, F-Droid ou App Store).<br>2. Leia este QR code com a câmera e toque em <b>Copiar</b> (ele tem o nome do tópico).<br>3. No app do ntfy, toque em <b>+</b>, cole o tópico e confirme. Se o <b>controle pelo celular</b> estiver ligado, dá pra fazer com um toque: na página do celular aparece <b>Assinar no app ntfy</b>.<br>4. No Android, ligue <b>Entrega instantânea</b> nesse tópico (pra o aviso chegar na hora).
+        ${!inf.ntfy.on?`<p class="note" style="margin:10px 0 0">Usa o app gratuito <b>ntfy</b> (sem conta e sem anúncio). Cada PC tem o seu endereço próprio.</p>`
+          : inf.ntfy.needServer?`<div class="note" style="margin-top:12px">Pra assinar pelo celular, ligue também o <b>Controle pelo celular</b> (aqui em cima): o QR code dos avisos aparece aqui.<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="ntTest">📨 Mandar aviso de teste</button><button class="btn sm ghost" id="ntAdv">Avançado</button></div></div>`
+          :`<div class="cel-qr"><img src="${inf.ntfy.qr}" alt="QR code do ntfy"><div class="cel-links">
+            <b style="color:var(--text)">Uma vez só:</b><br>1. Instale o app <b>ntfy</b> no celular (App Store ou Play Store).<br>2. Leia este QR code com a câmera do celular (no mesmo Wi-Fi do PC).<br>3. Siga o passo a passo que abre no celular: no Android é um toque; no iPhone é copiar o tópico e colar no ntfy.<br>4. No Android, ligue <b>Entrega instantânea</b> no tópico.
             <code>${esc(inf.ntfy.topic)}</code>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" id="ntTest">📨 Mandar aviso de teste</button><button class="btn sm ghost" id="ntNew">🔄 Endereço novo</button><button class="btn sm ghost" id="ntAdv">Avançado</button></div>
-          </div></div>`:`<p class="note" style="margin:10px 0 0">Usa o app gratuito <b>ntfy</b> (sem conta e sem anúncio). Cada PC tem o seu endereço próprio.</p>`}
+          </div></div>`}
       </div>
       <div class="card cel-card" style="margin-top:16px"><h3>🧪 Ciência sorteada</h3><div id="celCz"></div></div>
       <div class="card cel-card" style="margin-top:16px"><h3>📜 O que aconteceu</h3><div class="cel-log" id="celLog"></div></div>

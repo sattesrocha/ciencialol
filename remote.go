@@ -33,7 +33,7 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-//go:embed remote/index.html
+//go:embed remote/index.html remote/logo.png remote/cinzel.ttf
 var remoteFS embed.FS
 
 // ---- tipos da LCU usados aqui ----
@@ -154,7 +154,9 @@ type remoteApp struct {
 	cfg       rmConfig
 	conn      *lcuConn
 	view      rmView
-	champs    []rmChamp
+	champs    []rmChamp // do LoL (quando aberto)
+	ddVer     string    // versão do Data Dragon (o app manda): nomes e ícones mesmo com o LoL fechado
+	ddChamps  []rmChamp
 	logs      []string
 	acted     map[int]time.Time
 	lastPhase string
@@ -634,14 +636,38 @@ func (r *remoteApp) explainAuto(cs *rmChampSelect, a rmAuto) {
 }
 
 func (r *remoteApp) champName(id int) string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	for _, c := range r.champs {
-		if c.ID == id {
-			return c.Name
-		}
+	if c := r.champByID(id); c != nil {
+		return c.Name
 	}
 	return "#" + strconv.Itoa(id)
+}
+
+func (r *remoteApp) champByID(id int) *rmChamp {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, l := range [][]rmChamp{r.champs, r.ddChamps} {
+		for _, c := range l {
+			if c.ID == id {
+				c := c
+				return &c
+			}
+		}
+	}
+	return nil
+}
+
+// o app manda a lista do Data Dragon (nomes e ícones mesmo com o LoL fechado)
+func (r *remoteApp) setDDChamps(ver string, list []rmChamp) {
+	out := []rmChamp{}
+	for _, c := range list {
+		if c.ID > 0 && c.Name != "" && len(out) < 400 {
+			out = append(out, c)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	r.mu.Lock()
+	r.ddVer, r.ddChamps = ver, out
+	r.mu.Unlock()
 }
 
 func (r *remoteApp) hover(actionID, champID int) error {
@@ -833,7 +859,11 @@ func (r *remoteApp) handler() http.Handler {
 				return
 			}
 			http.SetCookie(w, &http.Cookie{Name: "clr", Value: t, Path: "/", MaxAge: 60 * 60 * 24 * 365, HttpOnly: true, SameSite: http.SameSiteStrictMode})
-			http.Redirect(w, req, "/", http.StatusFound)
+			dest := "/"
+			if req.URL.Query().Get("go") == "ntfy" { // QR do ntfy: abre direto na parte de assinar
+				dest = "/#ntfy"
+			}
+			http.Redirect(w, req, dest, http.StatusFound)
 			return
 		}
 		if !r.authed(req) {
@@ -845,8 +875,22 @@ func (r *remoteApp) handler() http.Handler {
 		b, _ := remoteFS.ReadFile("remote/index.html")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://ddragon.leagueoflegends.com; font-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; manifest-src 'self'")
 		w.Write(b)
+	})
+	static := func(path, file, ctype string) {
+		mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
+			b, _ := remoteFS.ReadFile("remote/" + file)
+			w.Header().Set("Content-Type", ctype)
+			w.Header().Set("Cache-Control", "max-age=604800")
+			w.Write(b)
+		})
+	}
+	static("/logo.png", "logo.png", "image/png")
+	static("/cinzel.ttf", "cinzel.ttf", "font/ttf")
+	mux.HandleFunc("/manifest.webmanifest", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/manifest+json")
+		fmt.Fprint(w, `{"name":"Ciência LOL","short_name":"Ciência LOL","start_url":"/","scope":"/","display":"standalone","orientation":"portrait","background_color":"#070b14","theme_color":"#070b14","icons":[{"src":"/logo.png","sizes":"320x320","type":"image/png","purpose":"any maskable"}]}`)
 	})
 	api := func(path string, post bool, h func(w http.ResponseWriter, req *http.Request) (any, error)) {
 		mux.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
@@ -887,7 +931,11 @@ func (r *remoteApp) handler() http.Handler {
 	api("/api/champions", false, func(w http.ResponseWriter, req *http.Request) (any, error) {
 		r.mu.RLock()
 		defer r.mu.RUnlock()
-		return r.champs, nil
+		list := r.champs
+		if len(list) == 0 {
+			list = r.ddChamps
+		}
+		return map[string]any{"ver": r.ddVer, "list": list}, nil
 	})
 	api("/api/accept", true, func(w http.ResponseWriter, req *http.Request) (any, error) {
 		if _, _, err := r.lcuDo("POST", "/lol-matchmaking/v1/ready-check/accept", nil); err != nil {

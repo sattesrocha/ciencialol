@@ -2,397 +2,594 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a1018">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#070b14">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Ciência LOL · Celular</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ciência LOL">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<title>Ciência LOL</title>
 <style>
-  :root{--bg:#0a1018;--card:#121b26;--line:#1f2c3b;--txt:#e6edf5;--mut:#7f8fa3;--gold:#c8aa6e;--blue:#3fa7d6;--red:#e0525b;--green:#3ecf8e}
+  @font-face{font-family:Cinzel;src:url(/cinzel.ttf) format("truetype");font-weight:400 900;font-display:swap}
+  :root{--bg:#070b14;--panel:#0f1726;--panel2:#16213a;--line:#233049;--text:#eef2f8;--muted:#8d9ab0;--gold:#c8aa6e;--gold2:#f0e6d2;--teal:#0ac8b9;--red:#e84057;--green:#3ecf8e;--blue:#4aa8ff;
+        --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px 12px 40px;max-width:640px;margin-inline:auto}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  h1{font-size:18px;margin:0;flex:1;letter-spacing:.3px}
-  .dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
-  .dot.on{background:var(--green)}
-  .pill{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--line);color:var(--mut)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:0 0 10px}
-  .big{font-size:26px;font-weight:700}
-  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  button{font:inherit;border:0;border-radius:10px;padding:12px 16px;background:var(--line);color:var(--txt);cursor:pointer}
-  button.primary{background:var(--gold);color:#1a1206;font-weight:700}
-  button.accept{background:var(--green);color:#04210f;font-weight:800;font-size:22px;flex:1;padding:22px}
-  button.danger{background:transparent;border:1px solid var(--red);color:var(--red)}
-  button:disabled{opacity:.4}
-  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:22px}
-  .turn{font-weight:800;font-size:20px}
-  .turn.ban{color:var(--red)} .turn.pick{color:var(--blue)}
-  input[type=search],input[type=number]{width:100%;font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0c141e;color:var(--txt)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin-top:10px;max-height:46vh;overflow:auto}
-  .ch{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--mut);text-align:center;cursor:pointer}
-  .ch img{width:56px;height:56px;border-radius:10px;border:2px solid transparent;background:#000}
-  .ch.sel img{border-color:var(--gold)}
-  .ch.sel{color:var(--gold)}
-  .icons{display:flex;gap:6px;flex-wrap:wrap}
-  .icons img{width:38px;height:38px;border-radius:8px;background:#000}
-  .icons .me{outline:2px solid var(--gold)}
-  .icons .intent{opacity:.45}
-  .icons .ban{filter:grayscale(1) brightness(.6)}
-  .empty{width:38px;height:38px;border-radius:8px;background:#0c141e;border:1px dashed var(--line)}
-  .muted{color:var(--mut);font-size:13px}
-  .switch{display:flex;justify-content:space-between;align-items:center;padding:8px 0}
-  .switch input{width:22px;height:22px;accent-color:var(--gold)}
-  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
-  .chip{display:flex;align-items:center;gap:6px;background:#0c141e;border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 3px;font-size:13px}
-  .chip img{width:24px;height:24px;border-radius:50%}
-  .chip b{color:var(--mut);font-weight:400;cursor:pointer;padding-left:2px}
-  .chip .n{color:var(--gold);font-size:11px}
-  .add{padding:6px 12px;font-size:13px}
-  #log{font:12px/1.5 ui-monospace,monospace;color:var(--mut);white-space:pre-wrap;max-height:160px;overflow:auto}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-end;z-index:9}
-  .modal.open{display:flex}
-  .sheet{background:var(--card);width:100%;max-width:640px;margin:auto auto 0;border-radius:16px 16px 0 0;padding:14px;max-height:85vh;display:flex;flex-direction:column}
-  .sheet .grid{max-height:none;flex:1}
-  .flash{animation:flash 1s infinite}
-  @keyframes flash{50%{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,170,110,.35)}}
-  #err{color:var(--red);font-size:13px;min-height:1em}
-  .cz{display:flex;gap:12px;align-items:center}
-  .cz img{width:56px;height:56px;border-radius:12px;border:2px solid var(--gold);background:#000}
-  .cz .t{flex:1;min-width:0}
-  .cz .t b{display:block;color:var(--gold);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cz .t span{color:var(--mut);font-size:13px}
-  .czb{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-  .czb button{flex:1}
+  [hidden]{display:none!important}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+  body{background:radial-gradient(900px 500px at 50% -10%,#14223d 0%,transparent 60%),var(--bg);min-height:100vh;-webkit-user-select:none;user-select:none}
+  button{font:inherit;border:0;color:inherit;background:none;cursor:pointer}
+  .cz-font{font-family:Cinzel,Georgia,serif}
+
+  /* barra de cima */
+  .appbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:calc(10px + var(--st)) 16px 10px;background:rgba(7,11,20,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.04)}
+  .appbar img{width:34px;height:34px;border-radius:10px}
+  .appbar h1{margin:0;flex:1;font:700 18px/1 Cinzel,Georgia,serif;letter-spacing:.5px;background:linear-gradient(180deg,#fff6e0,#c8aa6e);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .status{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 11px;white-space:nowrap}
+  .status i{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red)}
+  .status.on i{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+  main{padding:14px 14px calc(96px + var(--sb));max-width:560px;margin:0 auto}
+  .tab{display:none;animation:fade .2s ease}
+  .tab.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .label{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+  .muted{color:var(--muted);font-size:13.5px}
+
+  /* estado (fora da seleção) */
+  .hero{text-align:center;padding:30px 18px}
+  .hero .ic{font-size:46px;line-height:1;margin-bottom:12px}
+  .hero h2{margin:0 0 6px;font:700 22px/1.2 Cinzel,Georgia,serif;color:var(--gold2)}
+  .hero p{margin:0;color:var(--muted)}
+  .pulse{position:relative;width:86px;height:86px;margin:0 auto 14px;display:grid;place-items:center;font-size:36px}
+  .pulse::before,.pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--teal);animation:pulse 2s ease-out infinite}
+  .pulse::after{animation-delay:1s}
+  @keyframes pulse{from{transform:scale(.6);opacity:.9}to{transform:scale(1.5);opacity:0}}
+
+  /* ciência */
+  .cz{position:relative;overflow:hidden;border-radius:20px;margin-bottom:12px;border:1px solid rgba(200,170,110,.45);min-height:150px;background:#0b1220 center 20%/cover no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .cz::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,11,20,.95) 30%,rgba(7,11,20,.55) 70%,rgba(7,11,20,.25))}
+  .cz .in{position:relative;padding:16px;display:flex;flex-direction:column;gap:4px;min-height:150px}
+  .cz .k{font-size:11px;font-weight:800;letter-spacing:1.4px;color:var(--gold)}
+  .cz .n{font:700 22px/1.15 Cinzel,Georgia,serif;color:var(--gold2);max-width:75%}
+  .cz .c{color:var(--muted);font-size:13.5px}
+  .cz .bt{display:flex;gap:8px;margin-top:auto;padding-top:12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border-radius:14px;font-weight:700;background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+  .btn:active{transform:scale(.97)}
+  .btn.gold{background:linear-gradient(180deg,#e3c98f,#b8955a);color:#1a1206;border:0}
+  .btn.teal{background:linear-gradient(180deg,#19dccb,#079489);color:#03141a;border:0}
+  .btn:disabled{opacity:.45}
+  .btn.full{width:100%}
+
+  /* seleção */
+  .turn{display:flex;align-items:center;gap:14px}
+  .turn .t{flex:1}
+  .turn .t b{display:block;font:800 19px/1.2 Cinzel,Georgia,serif}
+  .turn .t span{color:var(--muted);font-size:13px}
+  .turn.ban .t b{color:var(--red)} .turn.pick .t b{color:var(--teal)} .turn.wait .t b{color:var(--gold2)}
+  .ring{position:relative;width:62px;height:62px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring span{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-variant-numeric:tabular-nums}
+  .teams{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+  .trow{display:flex;align-items:center;gap:8px}
+  .trow small{width:54px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px}
+  .slots{display:flex;gap:6px;flex:1}
+  .slot{width:42px;height:42px;border-radius:50%;background:#0b1220 center/cover;border:2px solid var(--line);flex:none}
+  .slot.me{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,170,110,.25)}
+  .slot.intent{opacity:.5}
+  .slot.ban{width:30px;height:30px;filter:grayscale(1) brightness(.6);border-color:rgba(232,64,87,.5)}
+  .search{width:100%;font:inherit;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:#0a1120;color:var(--text);outline:none;-webkit-user-select:text;user-select:text}
+  .search:focus{border-color:var(--gold)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:10px;margin-top:12px}
+  .ch{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted);text-align:center;cursor:pointer}
+  .ch img{width:60px;height:60px;border-radius:14px;border:2px solid transparent;background:#0b1220;object-fit:cover}
+  .ch.sel img{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,170,110,.3)}
+  .ch.sel{color:var(--gold2)}
+  .lockbar{position:fixed;left:0;right:0;bottom:calc(66px + var(--sb));padding:10px 14px;background:linear-gradient(180deg,transparent,rgba(7,11,20,.95) 30%);z-index:4;display:none}
+  .lockbar.on{display:block}
+  .lockbar .btn{max-width:532px;margin:0 auto;display:flex}
+  .hot{animation:hot 1.2s ease-in-out infinite}
+  @keyframes hot{50%{box-shadow:0 0 0 3px rgba(200,170,110,.45),0 10px 30px rgba(0,0,0,.25)}}
+
+  /* fila encontrada (tela cheia) */
+  .rc{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px;background:radial-gradient(600px 400px at 50% 40%,rgba(10,200,185,.18),rgba(7,11,20,.96) 70%);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .rc.on{display:flex}
+  .rc h2{margin:0;font:800 24px/1.2 Cinzel,Georgia,serif;color:var(--gold2);text-align:center;letter-spacing:1px}
+  .rc .acc{position:relative;width:200px;height:200px;border-radius:50%;display:grid;place-items:center}
+  .rc .acc svg{position:absolute;inset:0;transform:rotate(-90deg)}
+  .rc .acc button{width:164px;height:164px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2df0de,#068f85);color:#02161a;font:900 26px/1 Cinzel,Georgia,serif;letter-spacing:1px;box-shadow:0 0 40px rgba(10,200,185,.55)}
+  .rc .acc button:active{transform:scale(.96)}
+  .rc .acc button:disabled{background:#1e3a3a;color:#9fd;box-shadow:none;font-size:18px}
+  .rc .sec{font-size:15px;color:var(--muted)}
+  .rc .dec{color:var(--red);font-weight:700;padding:10px 18px;border:1px solid rgba(232,64,87,.5);border-radius:12px}
+
+  /* automático */
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(255,255,255,.05)}
+  .row:first-of-type{border-top:0;padding-top:2px}
+  .row .tx b{display:block;font-weight:600}
+  .row .tx span{font-size:12.5px;color:var(--muted)}
+  .sw{position:relative;width:50px;height:30px;flex:none}
+  .sw input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+  .sw span{position:absolute;inset:0;border-radius:999px;background:#2a3650;transition:.2s}
+  .sw span::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .sw input:checked+span{background:var(--teal)}
+  .sw input:checked+span::after{transform:translateX(20px)}
+  .step{display:flex;align-items:center;gap:4px;background:#0a1120;border:1px solid var(--line);border-radius:12px;padding:3px}
+  .step button{width:34px;height:32px;border-radius:9px;font-size:18px;font-weight:700;color:var(--gold2)}
+  .step b{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .chip{display:flex;align-items:center;gap:7px;background:#0a1120;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 4px;font-size:13px}
+  .chip img{width:28px;height:28px;border-radius:50%;background:#0b1220}
+  .chip i{font-style:normal;font-size:10.5px;color:var(--gold);font-weight:800}
+  .chip button{width:24px;height:24px;border-radius:50%;color:var(--muted);font-size:13px}
+  .add{color:var(--gold2);font-weight:700;font-size:13.5px;padding:9px 14px;border:1px dashed rgba(200,170,110,.5);border-radius:12px}
+
+  /* mais */
+  .log{font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);white-space:pre-wrap;max-height:260px;overflow:auto;-webkit-user-select:text;user-select:text}
+  .steps{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:13.5px}
+  .steps li{margin:4px 0}
+  .steps b{color:var(--text)}
+
+  /* barra de abas */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-around;padding:8px 8px calc(8px + var(--sb));background:rgba(10,15,27,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);padding:4px 0;position:relative}
+  .tabbar svg{width:24px;height:24px}
+  .tabbar button.on{color:var(--gold)}
+  .tabbar button .bd{position:absolute;top:0;left:calc(50% + 8px);width:9px;height:9px;border-radius:50%;background:var(--red);display:none}
+  .tabbar button .bd.on{display:block}
+
+  /* folha de escolha */
+  .sheet{position:fixed;inset:0;z-index:30;display:none;background:rgba(0,0,0,.6);align-items:flex-end}
+  .sheet.on{display:flex}
+  .sheet .in{width:100%;max-width:560px;margin:0 auto;background:var(--panel);border-radius:22px 22px 0 0;padding:10px 14px calc(14px + var(--sb));max-height:86vh;display:flex;flex-direction:column;border-top:1px solid var(--line);animation:up .22s ease}
+  @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+  .sheet .grab{width:40px;height:5px;border-radius:3px;background:#2f3c55;margin:2px auto 12px}
+  .sheet .grid{overflow:auto;flex:1}
+  .sheet h3{margin:0 0 10px;font:700 17px Cinzel,Georgia,serif;color:var(--gold2)}
+
+  .toast{position:fixed;left:50%;bottom:calc(84px + var(--sb));transform:translateX(-50%) translateY(20px);opacity:0;z-index:40;background:#2a1520;border:1px solid rgba(232,64,87,.5);color:#ffd6dc;padding:10px 16px;border-radius:14px;font-size:13.5px;max-width:90vw;transition:.25s;pointer-events:none}
+  .toast.on{opacity:1;transform:translateX(-50%)}
+  .toast.ok{background:#11261f;border-color:rgba(62,207,142,.5);color:#c9f5df}
 </style>
 </head>
 <body>
-<header>
-  <span class="dot" id="dot"></span>
-  <h1>🧪 Ciência LOL</h1>
-  <span class="pill" id="phase">…</span>
+<header class="appbar">
+  <img src="/logo.png" alt="">
+  <h1>Ciência LOL</h1>
+  <span class="status" id="status"><i></i><span id="phase">…</span></span>
 </header>
 
-<div class="card" id="alertsCard">
-  <div class="row" style="justify-content:space-between">
-    <span class="muted">Som e vibração quando a fila estourar ou chegar sua vez.</span>
-    <button id="btnAlerts" class="add">Ativar alertas</button>
-  </div>
-</div>
+<main>
+  <!-- ===== PARTIDA ===== -->
+  <section class="tab on" id="tab-partida">
+    <div class="card hero" id="hero"></div>
 
-<div id="err"></div>
-
-<div class="card" id="ntCard" hidden>
-  <h2>Avisos com o celular bloqueado</h2>
-  <div class="muted" style="margin-bottom:10px">Com o app <b>ntfy</b> instalado, toque abaixo pra receber a fila e a sua vez mesmo com a tela desligada (funciona no 4G).</div>
-  <div class="row"><a id="ntLink" href="#" style="flex:1"><button class="primary" style="width:100%">🔔 Assinar no app ntfy</button></a><button id="ntCopy">Copiar tópico</button></div>
-</div>
-
-<!-- Ciência sorteada -->
-<div class="card" id="czCard" hidden>
-  <h2>Sua ciência</h2>
-  <div class="cz"><img id="czImg" alt=""><div class="t"><b id="czNome"></b><span id="czChamp"></span></div></div>
-  <div class="czb">
-    <button class="primary" id="btnCzPick" hidden>Escolher</button>
-    <button id="btnCzImport" hidden>⚡ Importar build</button>
-  </div>
-</div>
-
-<!-- Fila / Ready check -->
-<div class="card" id="rcCard" hidden>
-  <h2>Partida encontrada</h2>
-  <div class="row" style="margin-bottom:12px">
-    <span class="timer" id="rcTimer"></span><span class="muted" id="rcStatus"></span>
-  </div>
-  <div class="row">
-    <button class="accept" id="btnAccept">ACEITAR</button>
-    <button class="danger" id="btnDecline">Recusar</button>
-  </div>
-</div>
-
-<!-- Seleção de campeões -->
-<div class="card" id="csCard" hidden>
-  <h2>Seleção de campeões</h2>
-  <div class="row" style="justify-content:space-between;margin-bottom:10px">
-    <span class="turn" id="csTurn"></span>
-    <span class="timer" id="csTimer"></span>
-  </div>
-  <div class="muted">Seu time</div>
-  <div class="icons" id="myTeam" style="margin:4px 0 8px"></div>
-  <div class="muted">Inimigos</div>
-  <div class="icons" id="theirTeam" style="margin:4px 0 8px"></div>
-  <div class="muted">Banidos</div>
-  <div class="icons" id="bans" style="margin:4px 0 10px"></div>
-
-  <div id="pickArea" hidden>
-    <input type="search" id="search" placeholder="Buscar campeão…" autocomplete="off">
-    <div class="grid" id="grid"></div>
-    <div class="row" style="margin-top:12px">
-      <button class="primary" id="btnLock" style="flex:1" disabled>Confirmar</button>
+    <div class="cz" id="cz" hidden>
+      <div class="in">
+        <span class="k">SUA CIÊNCIA</span>
+        <span class="n" id="czNome"></span>
+        <span class="c" id="czChamp"></span>
+        <div class="bt">
+          <button class="btn gold" id="btnCzPick" hidden>Escolher</button>
+          <button class="btn" id="btnCzImport" hidden>⚡ Importar build</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- Modo automático -->
-<div class="card">
-  <h2>Modo automático (se você não responder)</h2>
-  <label class="switch"><span>Aceitar partida sozinho</span><input type="checkbox" id="autoAccept"></label>
-  <label class="switch"><span>Banir/escolher sozinho</span><input type="checkbox" id="autoSelect"></label>
-  <label class="switch"><span>Campeão da ciência sorteada primeiro</span><input type="checkbox" id="useCiencia"></label>
-  <label class="switch"><span>Importar a build da ciência ao travar</span><input type="checkbox" id="autoImport"></label>
-  <label class="switch"><span>Agir quando faltar (segundos)</span><input type="number" id="secondsLeft" min="1" max="60" style="width:80px"></label>
-  <div style="margin-top:6px"><span class="muted">Bans, em ordem de prioridade</span>
-    <div class="chips" id="banChips"></div>
-    <button class="add" data-add="banList">+ adicionar ban</button>
-  </div>
-  <div style="margin-top:12px"><span class="muted">Picks, em ordem de prioridade (se um for pego, vai pro próximo)</span>
-    <div class="chips" id="pickChips"></div>
-    <button class="add" data-add="pickList">+ adicionar pick</button>
-  </div>
-</div>
-
-<div class="card">
-  <h2>Histórico</h2>
-  <div id="log"></div>
-</div>
-
-<div class="modal" id="modal">
-  <div class="sheet">
-    <div class="row" style="margin-bottom:8px">
-      <input type="search" id="mSearch" placeholder="Buscar campeão…" style="flex:1" autocomplete="off">
-      <button id="mClose">Fechar</button>
+    <div id="cs" hidden>
+      <div class="card" id="csCard">
+        <div class="turn" id="turn">
+          <div class="t"><b id="turnT"></b><span id="turnS"></span></div>
+          <div class="ring"><svg width="62" height="62"><circle cx="31" cy="31" r="27" fill="none" stroke="#233049" stroke-width="5"/><circle id="ringC" cx="31" cy="31" r="27" fill="none" stroke="var(--teal)" stroke-width="5" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="0"/></svg><span id="ringN"></span></div>
+        </div>
+        <div class="teams">
+          <div class="trow"><small>Seu time</small><div class="slots" id="myTeam"></div></div>
+          <div class="trow"><small>Inimigos</small><div class="slots" id="theirTeam"></div></div>
+          <div class="trow" id="bansRow"><small>Bans</small><div class="slots" id="bans" style="flex-wrap:wrap"></div></div>
+        </div>
+      </div>
+      <div class="card" id="pickArea" hidden>
+        <input class="search" type="search" id="search" placeholder="Buscar campeão…" autocomplete="off">
+        <div class="grid" id="grid"></div>
+      </div>
     </div>
+  </section>
+
+  <!-- ===== AUTOMÁTICO ===== -->
+  <section class="tab" id="tab-auto">
+    <div class="card">
+      <p class="label">Quando a fila estourar</p>
+      <div class="row"><div class="tx"><b>Aceitar sozinho</b><span>Aceita na hora, sem você tocar em nada</span></div><label class="sw"><input type="checkbox" id="autoAccept"><span></span></label></div>
+    </div>
+    <div class="card">
+      <p class="label">Na seleção de campeões</p>
+      <div class="row"><div class="tx"><b>Banir e escolher sozinho</b><span>Se você não agir até o tempo abaixo</span></div><label class="sw"><input type="checkbox" id="autoSelect"><span></span></label></div>
+      <div class="row"><div class="tx"><b>Agir quando faltar</b><span>segundos</span></div><div class="step"><button id="secMinus">−</button><b id="secV">8</b><button id="secPlus">+</button></div></div>
+      <div class="row"><div class="tx"><b>Campeão da ciência primeiro</b><span>O da sua carta sorteada vem antes da lista</span></div><label class="sw"><input type="checkbox" id="useCiencia"><span></span></label></div>
+      <div class="row"><div class="tx"><b>Importar a build ao travar</b><span>A build da ciência vai pro LoL sozinha</span></div><label class="sw"><input type="checkbox" id="autoImport"><span></span></label></div>
+    </div>
+    <div class="card">
+      <p class="label">Bans, em ordem</p>
+      <div class="chips" id="banChips"></div>
+      <button class="add" data-add="banList">+ Adicionar ban</button>
+    </div>
+    <div class="card">
+      <p class="label">Picks, em ordem</p>
+      <div class="muted">Se pegarem um, vai pro próximo.</div>
+      <div class="chips" id="pickChips"></div>
+      <button class="add" data-add="pickList">+ Adicionar pick</button>
+    </div>
+  </section>
+
+  <!-- ===== MAIS ===== -->
+  <section class="tab" id="tab-mais">
+    <div class="card">
+      <p class="label">Alertas nesta tela</p>
+      <div class="row"><div class="tx"><b>Som e vibração</b><span>Quando a fila estourar ou chegar sua vez (com esta tela aberta)</span></div><button class="btn" id="btnAlerts">Ativar</button></div>
+    </div>
+    <div class="card" id="ntCard" hidden>
+      <p class="label">Avisos com a tela desligada (ntfy)</p>
+      <div class="muted" style="margin-bottom:10px">A fila e a sua vez chegam como notificação, com o botão Aceitar, até no 4G. Primeiro instale o app <b style="color:var(--text)">ntfy</b> (grátis).</div>
+      <ol class="steps" id="ntSteps"></ol>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <a id="ntLink" href="#" style="flex:1;text-decoration:none"><span class="btn gold full">🔔 Abrir no ntfy</span></a>
+        <button class="btn" id="ntCopy" style="flex:1">📋 Copiar tópico</button>
+      </div>
+      <div class="muted" style="margin-top:10px;word-break:break-all">Tópico: <b style="color:var(--gold2);-webkit-user-select:all;user-select:all" id="ntTopic"></b></div>
+    </div>
+    <div class="card" id="installCard">
+      <p class="label">Usar como app</p>
+      <div class="muted">Coloque o Ciência LOL na tela inicial, com ícone próprio:</div>
+      <ol class="steps" id="installSteps"></ol>
+    </div>
+    <div class="card">
+      <p class="label">O que aconteceu</p>
+      <div class="log" id="log">Nada ainda.</div>
+    </div>
+  </section>
+</main>
+
+<div class="lockbar" id="lockbar"><button class="btn gold full" id="btnLock" disabled>Confirmar</button></div>
+
+<!-- fila encontrada -->
+<div class="rc" id="rc">
+  <h2>PARTIDA ENCONTRADA</h2>
+  <div class="acc">
+    <svg width="200" height="200"><circle cx="100" cy="100" r="94" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="7"/><circle id="rcRing" cx="100" cy="100" r="94" fill="none" stroke="var(--teal)" stroke-width="7" stroke-linecap="round" stroke-dasharray="590.6" stroke-dashoffset="0"/></svg>
+    <button id="btnAccept">ACEITAR</button>
+  </div>
+  <div class="sec" id="rcSec"></div>
+  <button class="dec" id="btnDecline">Recusar</button>
+</div>
+
+<!-- escolher campeão pras listas -->
+<div class="sheet" id="sheet">
+  <div class="in">
+    <div class="grab"></div>
+    <h3 id="sheetT">Adicionar</h3>
+    <input class="search" type="search" id="mSearch" placeholder="Buscar campeão…" autocomplete="off">
     <div class="grid" id="mGrid"></div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
+<nav class="tabbar">
+  <button class="on" data-tab="partida"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6M16 16l4 4M19 21l2-2"/></svg>Partida<i class="bd" id="bdPartida"></i></button>
+  <button data-tab="auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 17h5"/></svg>Automático</button>
+  <button data-tab="mais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>Mais</button>
+</nav>
+
 <script>
 const $ = id => document.getElementById(id);
-let champs = [], byId = {}, state = null, auto = null;
-let selected = 0, lastActionId = 0, prevPhase = '', prevTurn = 0;
-const PHASES = {None:'No menu',Lobby:'Sala',Matchmaking:'Na fila',ReadyCheck:'Partida encontrada!',ChampSelect:'Seleção',GameStart:'Carregando',InProgress:'Em jogo',WaitingForStats:'Fim de jogo',EndOfGame:'Fim de jogo',PreEndOfGame:'Fim de jogo',Reconnect:'Reconectar',Offline:'LoL fechado',Desligado:'Desligado'};
-const CS_PHASES = {PLANNING:'Declarando intenção',BAN_PICK:'Bans e picks',FINALIZATION:'Finalizando',GAME_STARTING:'Iniciando'};
+let champs = [], byId = {}, ddVer = '', state = null, auto = null, pcOnline = true;
+let selected = 0, lastActionId = 0, prevPhase = '', tab = 'partida';
+const PHASES = {None:'No menu',Lobby:'Na sala',Matchmaking:'Na fila',ReadyCheck:'Partida!',ChampSelect:'Seleção',GameStart:'Carregando',InProgress:'Em jogo',WaitingForStats:'Fim de jogo',EndOfGame:'Fim de jogo',PreEndOfGame:'Fim de jogo',Reconnect:'Reconectar',Offline:'LoL fechado',Desligado:'Desligado'};
+const CS_PHASES = {PLANNING:'Declarando intenções',BAN_PICK:'Bans e picks',FINALIZATION:'Últimos ajustes',GAME_STARTING:'A partida vai começar'};
+const norm = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const icon = id => id > 0 ? `/icon/${id}` : '';
-const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+// ícone: Data Dragon (funciona com o LoL fechado); se não tiver, pede ao LoL pelo PC
+function icon(id) {
+  const c = byId[id];
+  if (ddVer && c && c.alias) return `https://ddragon.leagueoflegends.com/cdn/${ddVer}/img/champion/${encodeURIComponent(c.alias)}.png`;
+  return id > 0 ? `/icon/${id}` : '';
+}
+const art = id => { const c = byId[id]; return c && c.alias ? `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${encodeURIComponent(c.alias)}_0.jpg` : ''; };
+const nameOf = id => byId[id]?.name || ('#' + id);
 
 async function api(path, body) {
   const r = await fetch(path, body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-  if (!r.ok) throw new Error(await r.text());
+  if (!r.ok) throw new Error((await r.text()).trim() || ('erro ' + r.status));
   return r.json();
+}
+let toastT = 0;
+function toast(msg, ok) { const t = $('toast'); t.textContent = String(msg.message || msg).slice(0, 200); t.className = 'toast on' + (ok ? ' ok' : ''); clearTimeout(toastT); toastT = setTimeout(() => t.className = 'toast', 3500); }
+
+// ---------- abas ----------
+document.querySelectorAll('.tabbar button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  tab = t;
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('.tab').forEach(s => s.classList.toggle('on', s.id === 'tab-' + t));
+  updateLockbar(); window.scrollTo(0, 0);
 }
 
 // ---------- alertas ----------
 let audioCtx = null;
 $('btnAlerts').onclick = () => {
   audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-  beep(); $('btnAlerts').textContent = 'Alertas ativos ✓';
+  beep(); $('btnAlerts').textContent = 'Ativos ✓';
 };
 function beep() {
   if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
   if (!audioCtx) return;
-  [0, .25, .5].forEach(t => {
+  [0, .22, .44].forEach((t, i) => {
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
-    g.gain.setValueAtTime(.25, audioCtx.currentTime + t);
-    o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + .18);
+    o.frequency.value = [880, 988, 1175][i]; o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(.22, audioCtx.currentTime + t);
+    g.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + t + .2);
+    o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + .21);
   });
 }
 
-// ---------- ready check ----------
-$('btnAccept').onclick = () => api('/api/accept', {}).catch(showErr);
-$('btnDecline').onclick = () => api('/api/decline', {}).catch(showErr);
+// ---------- fila ----------
+$('btnAccept').onclick = () => api('/api/accept', {}).catch(toast);
+$('btnDecline').onclick = () => api('/api/decline', {}).catch(toast);
 
 // ---------- seleção ----------
 $('search').oninput = renderGrid;
 $('btnLock').onclick = async () => {
-  const a = state?.champSelect?.myAction;
-  if (!a || !selected) return;
+  const a = state?.champSelect?.myAction; if (!a || !selected) return;
   $('btnLock').disabled = true;
-  try { await api('/api/lock', {actionId:a.id, championId:selected}); } catch(e) { showErr(e); }
+  try { await api('/api/lock', {actionId:a.id, championId:selected}); toast((a.type==='ban'?'Banido: ':'Escolhido: ') + nameOf(selected), true); } catch(e) { toast(e); $('btnLock').disabled = false; }
 };
-
 function available(cs) {
   const a = cs.myAction; if (!a) return [];
   const allow = new Set(a.type === 'ban' ? cs.bannable : cs.pickable);
   (cs.unavailable || []).forEach(id => allow.delete(id));
   return champs.filter(c => allow.has(c.id));
 }
-
 function renderGrid() {
   const cs = state?.champSelect; if (!cs?.myAction) return;
   const q = norm($('search').value);
   const list = available(cs).filter(c => !q || norm(c.name).includes(q) || norm(c.alias).includes(q));
-  $('grid').innerHTML = list.map(c =>
-    `<div class="ch ${c.id===selected?'sel':''}" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}"><span>${c.name}</span></div>`).join('');
+  $('grid').innerHTML = list.map(c => `<div class="ch ${c.id===selected?'sel':''}" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}" alt="" onerror="this.style.opacity=0"><span>${esc(c.name)}</span></div>`).join('') || '<div class="muted">Nenhum campeão.</div>';
 }
 $('grid').onclick = e => {
   const el = e.target.closest('.ch'); if (!el) return;
   selected = +el.dataset.id;
   const a = state?.champSelect?.myAction;
   if (a) api('/api/hover', {actionId:a.id, championId:selected}).catch(()=>{});
-  $('btnLock').disabled = false;
-  $('btnLock').textContent = (a?.type === 'ban' ? 'Banir ' : 'Escolher ') + (byId[selected]?.name || '');
-  renderGrid();
+  setLockLabel(a); renderGrid();
 };
-
-function teamIcons(slots) {
-  return (slots||[]).map(s => {
+function setLockLabel(a) {
+  $('btnLock').disabled = !selected;
+  $('btnLock').textContent = selected ? ((a?.type === 'ban' ? 'Banir ' : 'Escolher ') + nameOf(selected)) : (a?.type === 'ban' ? 'Escolha quem banir' : 'Escolha um campeão');
+}
+function updateLockbar() { $('lockbar').classList.toggle('on', tab === 'partida' && !!state?.champSelect?.myAction); }
+function slots(list, opt = {}) {
+  return (list||[]).map(s => {
     const id = s.championId || s.intent;
-    const cls = (s.me?'me ':'') + (!s.championId && s.intent ? 'intent':'');
-    return id ? `<img class="${cls}" src="${icon(id)}" title="${byId[id]?.name||''}">` : `<div class="empty ${s.me?'me':''}"></div>`;
+    const cls = 'slot' + (s.me ? ' me' : '') + (!s.championId && s.intent ? ' intent' : '');
+    return `<div class="${cls}" ${id ? `style="background-image:url('${icon(id)}')" title="${esc(nameOf(id))}"` : ''}></div>`;
   }).join('');
 }
 
+// ---------- ciência ----------
+function renderCiencia(s) {
+  const c = s.ciencia, cs = s.champSelect;
+  $('cz').hidden = !c;
+  if (!c) return;
+  const a = art(c.key); $('cz').style.backgroundImage = a ? `url('${a}')` : '';
+  $('czNome').textContent = c.nome; $('czChamp').textContent = c.champ;
+  const my = cs && cs.myAction;
+  const can = my && my.type === 'pick' && available(cs).some(x => x.id === c.key);
+  $('btnCzPick').hidden = !can; $('btnCzPick').textContent = 'Escolher ' + c.champ;
+  $('btnCzImport').hidden = !(cs && c.payload);
+  $('btnCzImport').textContent = s.imported ? '⚡ De novo' : '⚡ Importar build';
+}
+$('btnCzPick').onclick = async () => {
+  const a = state?.champSelect?.myAction, c = state?.ciencia; if (!a || !c) return;
+  $('btnCzPick').disabled = true;
+  try { await api('/api/lock', {actionId:a.id, championId:c.key}); toast('Escolhido: ' + c.champ, true); } catch(e) { toast(e); }
+  $('btnCzPick').disabled = false;
+};
+$('btnCzImport').onclick = async () => {
+  $('btnCzImport').disabled = true;
+  try { await api('/api/import', {}); toast('Build enviada pro LoL ⚡', true); } catch(e) { toast(e); }
+  $('btnCzImport').disabled = false;
+};
+
 // ---------- automático ----------
 ['autoAccept','autoSelect','useCiencia','autoImport'].forEach(k => $(k).onchange = () => saveAuto({[k]: $(k).checked}));
-$('secondsLeft').onchange = () => saveAuto({secondsLeft: +$('secondsLeft').value || 8});
+$('secMinus').onclick = () => saveAuto({secondsLeft: Math.max(1, (auto?.secondsLeft || 8) - 1)});
+$('secPlus').onclick = () => saveAuto({secondsLeft: Math.min(60, (auto?.secondsLeft || 8) + 1)});
+let savingAuto = 0;
 async function saveAuto(patch) {
-  auto = {...auto, ...patch};
-  auto = await api('/api/auto', auto).catch(showErr) || auto;
+  auto = {...auto, ...patch}; renderAuto(); savingAuto = Date.now();
+  try { auto = await api('/api/auto', auto); } catch(e) { toast(e); }
   renderAuto();
 }
 function renderAuto() {
   if (!auto) return;
-  $('autoAccept').checked = auto.autoAccept;
-  $('autoSelect').checked = auto.autoSelect;
-  $('useCiencia').checked = !!auto.useCiencia;
-  $('autoImport').checked = !!auto.autoImport;
-  if (document.activeElement !== $('secondsLeft')) $('secondsLeft').value = auto.secondsLeft;
-  const chips = key => (auto[key]||[]).map((id,i) =>
-    `<span class="chip"><img src="${icon(id)}"><span class="n">${i+1}</span>${byId[id]?.name||id}<b data-rm="${key}:${i}">✕</b></span>`).join('') || '<span class="muted">vazio</span>';
-  $('banChips').innerHTML = chips('banList');
-  $('pickChips').innerHTML = chips('pickList');
+  ['autoAccept','autoSelect','useCiencia','autoImport'].forEach(k => $(k).checked = !!auto[k]);
+  $('secV').textContent = auto.secondsLeft;
+  const chips = key => (auto[key]||[]).map((id,i) => `<span class="chip"><img src="${icon(id)}" alt="" onerror="this.style.opacity=0"><i>${i+1}</i>${esc(nameOf(id))}<button data-rm="${key}:${i}" aria-label="Tirar">✕</button></span>`).join('') || '<span class="muted">Vazio</span>';
+  $('banChips').innerHTML = chips('banList'); $('pickChips').innerHTML = chips('pickList');
 }
 document.addEventListener('click', e => {
-  const rm = e.target.dataset?.rm;
-  if (rm) { const [k,i] = rm.split(':'); const l = [...(auto[k]||[])]; l.splice(+i,1); saveAuto({[k]:l}); }
-  const add = e.target.dataset?.add;
-  if (add) openPicker(add);
+  const rm = e.target.closest('[data-rm]');
+  if (rm) { const [k,i] = rm.dataset.rm.split(':'); const l = [...(auto[k]||[])]; l.splice(+i,1); saveAuto({[k]:l}); return; }
+  const add = e.target.closest('[data-add]');
+  if (add) openSheet(add.dataset.add);
 });
 
-// ---------- modal de escolha ----------
-let pickerKey = null;
-function openPicker(key) { pickerKey = key; $('mSearch').value=''; renderModal(); $('modal').classList.add('open'); }
-$('mClose').onclick = () => $('modal').classList.remove('open');
-$('mSearch').oninput = renderModal;
-function renderModal() {
-  const q = norm($('mSearch').value), have = new Set(auto[pickerKey]||[]);
-  $('mGrid').innerHTML = champs.filter(c => !have.has(c.id) && (!q || norm(c.name).includes(q)))
-    .map(c => `<div class="ch" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}"><span>${c.name}</span></div>`).join('');
+// ---------- folha de escolha ----------
+let sheetKey = null;
+function openSheet(key) {
+  sheetKey = key; $('sheetT').textContent = key === 'banList' ? 'Adicionar ban' : 'Adicionar pick';
+  $('mSearch').value = ''; renderSheet(); $('sheet').classList.add('on');
+}
+$('sheet').onclick = e => { if (e.target === $('sheet')) $('sheet').classList.remove('on'); };
+$('mSearch').oninput = renderSheet;
+function renderSheet() {
+  const q = norm($('mSearch').value), have = new Set(auto?.[sheetKey]||[]);
+  $('mGrid').innerHTML = champs.filter(c => !have.has(c.id) && (!q || norm(c.name).includes(q) || norm(c.alias).includes(q)))
+    .map(c => `<div class="ch" data-id="${c.id}"><img loading="lazy" src="${icon(c.id)}" alt="" onerror="this.style.opacity=0"><span>${esc(c.name)}</span></div>`).join('') || '<div class="muted">Os campeões aparecem quando o Ciência LOL abre no PC.</div>';
 }
 $('mGrid').onclick = e => {
   const el = e.target.closest('.ch'); if (!el) return;
-  saveAuto({[pickerKey]: [...(auto[pickerKey]||[]), +el.dataset.id]});
-  $('modal').classList.remove('open');
+  saveAuto({[sheetKey]: [...(auto?.[sheetKey]||[]), +el.dataset.id]});
+  $('sheet').classList.remove('on'); toast('Adicionado: ' + nameOf(+el.dataset.id), true);
 };
 
-// ---------- loop ----------
-function showErr(e) { $('err').textContent = String(e.message || e).slice(0,200); setTimeout(()=>$('err').textContent='', 4000); }
+// ---------- mais ----------
+$('ntCopy').onclick = async () => {
+  const t = state && state.ntfyTopic; if (!t) return;
+  let ok = false;
+  try { await navigator.clipboard.writeText(t); ok = true; } catch {}
+  if (!ok) { // http na rede local: o navegador pode bloquear a área de transferência; usa o jeito antigo
+    const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, t.length);
+    try { ok = document.execCommand('copy'); } catch {}
+    ta.remove();
+  }
+  if (ok) { $('ntCopy').textContent = 'Copiado ✓'; toast('Tópico copiado. Agora cole no ntfy.', true); }
+  else toast('Segure o dedo no tópico abaixo pra copiar.');
+};
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let ntfyShown = false;
+function renderNtfy(s) {
+  $('ntCard').hidden = !s.ntfyLink;
+  if (!s.ntfyLink) return;
+  $('ntLink').href = s.ntfyLink; $('ntTopic').textContent = s.ntfyTopic || '';
+  // iPhone: o app do ntfy não abre por link; o jeito certo é copiar e colar
+  $('ntLink').hidden = IOS;
+  $('ntSteps').innerHTML = IOS
+    ? '<li>Toque em <b>Copiar tópico</b> aqui embaixo.</li><li>Abra o app <b>ntfy</b> e toque em <b>+</b>.</li><li>Cole o tópico e toque em <b>Subscribe</b>.</li><li>Pronto: no PC, use <b>Mandar aviso de teste</b> pra conferir.</li>'
+    : '<li>Toque em <b>Abrir no ntfy</b> e confirme.</li><li>No tópico, ligue <b>Entrega instantânea</b> (o aviso chega na hora).</li><li>Se o botão não abrir o app: copie o tópico, abra o ntfy, toque em <b>+</b> e cole.</li>';
+  if (!ntfyShown && location.hash === '#ntfy') { // veio pelo QR do ntfy
+    ntfyShown = true; showTab('mais');
+    setTimeout(() => { $('ntCard').scrollIntoView({behavior:'smooth', block:'center'}); $('ntCard').classList.add('hot'); }, 150);
+    history.replaceState(null, '', '/');
+  }
+}
+(function installHelp() {
+  const ios = IOS;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) { $('installCard').hidden = true; return; }
+  $('installSteps').innerHTML = ios
+    ? '<li>Abra esta página no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> (quadrado com seta).</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li>'
+    : '<li>Toque no menu <b>⋮</b> do Chrome.</li><li>Escolha <b>Adicionar à tela inicial</b>.</li><li>Abra pelo ícone do Ciência LOL.</li>';
+})();
+
+// ---------- estado ----------
+function hero(s) {
+  const h = $('hero');
+  if (!pcOnline) return h.innerHTML = `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o celular está no mesmo Wi-Fi (ou no Tailscale) e se o Ciência LOL está aberto no PC.</p>`;
+  const p = s.phase;
+  const M = {
+    Offline: ['🖥️','LoL fechado','Abra o League of Legends no PC.'],
+    Desligado: ['⏸️','Controle desligado','Ligue no Ciência LOL, na aba Celular.'],
+    None: ['🏠','No menu','Quando a fila estourar, você aceita por aqui.'],
+    Lobby: ['👥','Na sala','Quando a fila estourar, você aceita por aqui.'],
+    Matchmaking: [null,'Procurando partida…', auto?.autoAccept ? 'O automático aceita assim que achar.' : 'Fique de olho: o botão de aceitar aparece aqui.'],
+    GameStart: ['⏳','Carregando a partida','Boa sorte!'],
+    InProgress: ['⚔️','Em jogo','Boa partida!'],
+    WaitingForStats: ['🏁','Fim de jogo',''], PreEndOfGame: ['🏁','Fim de jogo',''], EndOfGame: ['🏁','Fim de jogo','Bora mais uma?'],
+    Reconnect: ['🔌','Reconectar','A partida está esperando você.'],
+  }[p] || ['🎮', PHASES[p] || p, ''];
+  h.innerHTML = (M[0] ? `<div class="ic">${M[0]}</div>` : `<div class="pulse">🔎</div>`) + `<h2>${esc(M[1])}</h2>` + (M[2] ? `<p>${esc(M[2])}</p>` : '');
+}
 
 async function loadChamps() {
   try {
-    champs = (await api('/api/champions')).sort((a,b)=>a.name.localeCompare(b.name));
-    byId = Object.fromEntries(champs.map(c=>[c.id,c]));
+    const r = await api('/api/champions');
+    const list = Array.isArray(r) ? r : (r.list || []);
+    if (!list.length) return;
+    ddVer = r.ver || ddVer;
+    champs = list.slice().sort((a,b) => a.name.localeCompare(b.name, 'pt'));
+    byId = Object.fromEntries(champs.map(c => [c.id, c]));
     renderAuto();
   } catch {}
 }
 
 async function poll() {
   try {
-    state = await api('/api/state');
-    if (!champs.length && state.connected) await loadChamps();
-    if (!auto || document.activeElement?.type !== 'number') { auto = state.auto; renderAuto(); }
+    state = await api('/api/state'); pcOnline = true;
+    if (!champs.length || (!ddVer && state.connected)) await loadChamps();
+    if (Date.now() - savingAuto > 1500) { auto = state.auto; renderAuto(); }
     render();
-  } catch(e) {
-    $('dot').classList.remove('on'); $('phase').textContent = 'PC offline';
+  } catch (e) {
+    pcOnline = false; $('status').classList.remove('on'); $('phase').textContent = 'PC offline';
+    $('rc').classList.remove('on'); $('cs').hidden = true; $('hero').hidden = false; hero({});
   }
   setTimeout(poll, 1000);
 }
 
 function render() {
   const s = state;
-  $('dot').classList.toggle('on', s.connected);
+  $('status').classList.toggle('on', !!s.connected);
   $('phase').textContent = PHASES[s.phase] || s.phase;
-  if (s.error && !s.connected) $('err').textContent = s.error;
-  else if ($('err').textContent.startsWith('cliente')) $('err').textContent = '';
 
-  // alerta de fila
+  // fila encontrada: tela cheia
+  const rc = s.readyCheck;
   if (s.phase === 'ReadyCheck' && prevPhase !== 'ReadyCheck') beep();
   prevPhase = s.phase;
-
-  const rc = s.readyCheck;
-  $('rcCard').hidden = !rc;
-  $('rcCard').classList.toggle('flash', !!rc && rc.playerResponse === 'None');
+  $('rc').classList.toggle('on', !!rc && rc.state === 'InProgress');
   if (rc) {
-    $('rcTimer').textContent = Math.max(0, Math.ceil(12 - rc.timer)) + 's';
-    const resp = {None:'aguardando sua resposta', Accepted:'você aceitou ✓', Declined:'você recusou'}[rc.playerResponse] || rc.playerResponse;
-    $('rcStatus').textContent = resp;
-    $('btnAccept').disabled = rc.playerResponse !== 'None';
+    const left = Math.max(0, 12 - rc.timer);
+    $('rcRing').style.strokeDashoffset = 590.6 * (1 - left / 12);
+    const resp = rc.playerResponse;
+    $('btnAccept').disabled = resp !== 'None';
+    $('btnAccept').textContent = resp === 'Accepted' ? 'ACEITA ✓' : resp === 'Declined' ? 'RECUSADA' : 'ACEITAR';
+    $('rcSec').textContent = resp === 'Accepted' ? 'Esperando os outros jogadores…' : Math.ceil(left) + ' segundos';
+    $('btnDecline').hidden = resp !== 'None';
   }
 
   renderCiencia(s);
-  $('ntCard').hidden = !s.ntfyLink;
-  if (s.ntfyLink) $('ntLink').href = s.ntfyLink;
+  renderNtfy(s);
+  $('log').textContent = (s.log||[]).slice().reverse().join('\n') || 'Nada ainda.';
+
   const cs = s.champSelect;
-  $('csCard').hidden = !cs;
-  if (!cs) { lastActionId = 0; selected = 0; return; }
-  $('csTimer').textContent = Math.max(0, Math.ceil(cs.timeLeft)) + 's';
-  $('myTeam').innerHTML = teamIcons(cs.myTeam);
-  $('theirTeam').innerHTML = teamIcons(cs.theirTeam);
-  $('bans').innerHTML = (cs.bans||[]).map(id => `<img class="ban" src="${icon(id)}">`).join('') || '<span class="muted">—</span>';
+  $('cs').hidden = !cs; $('hero').hidden = !!cs;
+  $('bdPartida').classList.toggle('on', !!(cs && cs.myAction) && tab !== 'partida');
+  if (!cs) { hero(s); lastActionId = 0; selected = 0; updateLockbar(); return; }
+
+  const total = cs.phase === 'PLANNING' ? 30 : 30;
+  const left = Math.max(0, cs.timeLeft);
+  $('ringN').textContent = cs.infinite ? '∞' : Math.ceil(left);
+  $('ringC').style.strokeDashoffset = cs.infinite ? 0 : 169.6 * (1 - Math.min(1, left / total));
+  $('ringC').style.stroke = left <= 8 && !cs.infinite ? 'var(--red)' : 'var(--teal)';
+  $('myTeam').innerHTML = slots(cs.myTeam);
+  $('theirTeam').innerHTML = slots(cs.theirTeam);
+  $('bans').innerHTML = (cs.bans||[]).map(id => `<div class="slot ban" style="background-image:url('${icon(id)}')"></div>`).join('') || '<span class="muted">—</span>';
+  $('bansRow').hidden = !(cs.bans||[]).length;
 
   const a = cs.myAction;
-  $('csCard').classList.toggle('flash', !!a);
+  $('csCard').classList.toggle('hot', !!a);
   if (a) {
-    $('csTurn').textContent = a.type === 'ban' ? 'SUA VEZ DE BANIR' : 'SUA VEZ DE ESCOLHER';
-    $('csTurn').className = 'turn ' + a.type;
+    $('turn').className = 'turn ' + a.type;
+    $('turnT').textContent = a.type === 'ban' ? 'Sua vez de banir' : 'Sua vez de escolher';
+    $('turnS').textContent = auto?.autoSelect && !cs.infinite ? `O automático age com ${auto.secondsLeft}s` : 'Toque num campeão e confirme';
     if (a.id !== lastActionId) {
-      lastActionId = a.id; selected = a.championId || 0;
-      $('search').value = ''; beep();
-      $('btnLock').disabled = !selected;
-      $('btnLock').textContent = selected ? ((a.type==='ban'?'Banir ':'Escolher ') + (byId[selected]?.name||'')) : 'Confirmar';
-      renderGrid();
+      lastActionId = a.id; selected = a.championId || 0; $('search').value = '';
+      beep(); setLockLabel(a); renderGrid();
+      if (tab !== 'partida') toast(a.type === 'ban' ? 'Sua vez de banir!' : 'Sua vez de escolher!', true);
     }
   } else {
-    $('csTurn').textContent = CS_PHASES[cs.phase] || 'Aguardando';
-    $('csTurn').className = 'turn';
+    $('turn').className = 'turn wait';
+    $('turnT').textContent = CS_PHASES[cs.phase] || 'Aguardando';
+    $('turnS').textContent = cs.myChamp ? 'Seu campeão: ' + nameOf(cs.myChamp) : 'Aguarde a sua vez';
   }
   $('pickArea').hidden = !a;
-  $('log').textContent = (s.log||[]).slice().reverse().join('\n');
+  updateLockbar();
 }
-// ---------- ciência ----------
-function renderCiencia(s) {
-  const c = s.ciencia, cs = s.champSelect;
-  $('czCard').hidden = !c;
-  if (!c) return;
-  $('czImg').src = icon(c.key); $('czNome').textContent = c.nome; $('czChamp').textContent = c.champ;
-  const a = cs && cs.myAction;
-  const can = a && a.type === 'pick' && available(cs).some(x => x.id === c.key);
-  $('btnCzPick').hidden = !can;
-  $('btnCzPick').textContent = 'Escolher ' + c.champ;
-  $('btnCzImport').hidden = !(cs && c.payload);
-  $('btnCzImport').textContent = s.imported ? '⚡ Importar de novo' : '⚡ Importar build';
-}
-$('btnCzPick').onclick = async () => {
-  const a = state?.champSelect?.myAction, c = state?.ciencia; if (!a || !c) return;
-  $('btnCzPick').disabled = true;
-  try { await api('/api/lock', {actionId:a.id, championId:c.key}); } catch(e) { showErr(e); }
-  $('btnCzPick').disabled = false;
-};
-$('btnCzImport').onclick = async () => {
-  $('btnCzImport').disabled = true;
-  try { await api('/api/import', {}); } catch(e) { showErr(e); }
-  $('btnCzImport').disabled = false;
-};
-
-$('ntCopy').onclick = async () => {
-  const t = state && state.ntfyTopic; if (!t) return;
-  try { await navigator.clipboard.writeText(t); $('ntCopy').textContent = 'Copiado ✓'; }
-  catch { prompt('Copie o tópico:', t); }
-};
-
-// log também fora da seleção
-setInterval(() => { if (state) $('log').textContent = (state.log||[]).slice().reverse().join('\n'); }, 1000);
 
 loadChamps(); poll();
 </script>

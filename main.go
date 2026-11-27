@@ -196,6 +196,14 @@ func main() {
 		}
 		return remote.setNtfy(c)
 	})
+	bindAsync(w, "remoteSetChamps", func(a []string) (any, error) {
+		var list []rmChamp
+		if err := json.Unmarshal([]byte(arg(a, 1)), &list); err != nil {
+			return nil, errors.New("lista inválida")
+		}
+		remote.setDDChamps(arg(a, 0), list)
+		return true, nil
+	})
 	bindAsync(w, "remoteNtfyTest", func(a []string) (any, error) { return true, remote.ntfyTest() })
 	bindAsync(w, "remoteSetCiencia", func(a []string) (any, error) {
 		var c *rmCiencia

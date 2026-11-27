@@ -98,6 +98,21 @@ type ntfyMsg struct {
 	Priority int          `json:"priority,omitempty"`
 	Tags     []string     `json:"tags,omitempty"`
 	Actions  []ntfyAction `json:"actions,omitempty"`
+	Icon     string       `json:"icon,omitempty"`   // ícone da notificação (logo do Ciência LOL)
+	Attach   string       `json:"attach,omitempty"` // imagem grande (arte do campeão)
+	Filename string       `json:"filename,omitempty"`
+	Click    string       `json:"click,omitempty"` // tocar na notificação abre a página do celular
+}
+
+// logo público (site do projeto no GitHub Pages)
+const ntfyIcon = "https://sattesrocha.github.io/ciencialol/ui/img/logo.png"
+
+// arte vertical do campeão (Data Dragon, sem versão)
+func champArt(alias string) string {
+	if alias == "" {
+		return ""
+	}
+	return "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/" + url.PathEscape(alias) + "_0.jpg"
 }
 
 var ntfyClient = &http.Client{Timeout: 10 * time.Second}
@@ -108,6 +123,14 @@ func (r *remoteApp) ntfySend(m ntfyMsg) error {
 		return errors.New("avisos no celular desligados")
 	}
 	m.Topic = n.Topic
+	if m.Icon == "" {
+		m.Icon = ntfyIcon
+	}
+	if m.Click == "" {
+		if o := r.openBtn(); o != nil {
+			m.Click = o.URL
+		}
+	}
 	b, _ := json.Marshal(m)
 	req, _ := http.NewRequest("POST", n.Server+"/", bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
@@ -177,7 +200,7 @@ func (r *remoteApp) onReadyCheck(auto bool) {
 	if o := r.openBtn(); o != nil {
 		acts = append(acts, *o)
 	}
-	r.notify(ntfyMsg{Title: "Partida encontrada!", Message: "Aceite antes do tempo acabar.", Priority: 5, Tags: []string{"rotating_light"}, Actions: acts})
+	r.notify(ntfyMsg{Title: "Partida encontrada!", Message: "Aceite antes do tempo acabar.", Priority: 5, Tags: []string{"crossed_swords"}, Actions: acts})
 }
 
 func (r *remoteApp) onMyTurn(cs *rmChampSelect, a rmAuto) {
@@ -193,8 +216,12 @@ func (r *remoteApp) onMyTurn(cs *rmChampSelect, a rmAuto) {
 		msg += fmt.Sprintf(" Se você não agir, o automático age quando faltarem %ds.", a.SecondsLeft)
 	}
 	acts := []ntfyAction{}
+	art := ""
 	if act.Type == "pick" {
 		if c := r.getCiencia(); c != nil && champAvailable(cs, c.Key) {
+			if ch := r.champByID(c.Key); ch != nil {
+				art = champArt(ch.Alias)
+			}
 			code := newCode()
 			r.mu.Lock()
 			r.pkCode, r.pkAction, r.pkChamp = code, act.ID, c.Key
@@ -209,7 +236,11 @@ func (r *remoteApp) onMyTurn(cs *rmChampSelect, a rmAuto) {
 	if o := r.openBtn(); o != nil {
 		acts = append(acts, *o)
 	}
-	r.notify(ntfyMsg{Title: title, Message: msg, Priority: 5, Tags: []string{"crossed_swords"}, Actions: acts})
+	m := ntfyMsg{Title: title, Message: msg, Priority: 5, Tags: []string{"hourglass_flowing_sand"}, Actions: acts}
+	if art != "" {
+		m.Attach, m.Filename = art, "ciencia.jpg"
+	}
+	r.notify(m)
 }
 
 func champAvailable(cs *rmChampSelect, id int) bool {
@@ -269,7 +300,11 @@ func (r *remoteApp) handleReply(body string) {
 			return
 		}
 		r.addLog("Celular (notificação): escolheu " + r.champName(pkChamp))
-		r.notify(ntfyMsg{Title: "Escolhido: " + r.champName(pkChamp), Message: "Travado no LoL ✅", Priority: 3, Tags: []string{"white_check_mark"}})
+		m := ntfyMsg{Title: "Escolhido: " + r.champName(pkChamp), Message: "Travado no LoL", Priority: 3, Tags: []string{"white_check_mark"}}
+		if ch := r.champByID(pkChamp); ch != nil {
+			m.Attach, m.Filename = champArt(ch.Alias), "campeao.jpg"
+		}
+		r.notify(m)
 		r.afterPick(pkChamp)
 	}
 }
@@ -340,12 +375,13 @@ func (r *remoteApp) ntfyApply() {
 // ---- configuração (app) ----
 
 type rmNtfyInfo struct {
-	On       bool   `json:"on"`
-	Server   string `json:"server"`
-	Topic    string `json:"topic"`
-	HasToken bool   `json:"hasToken"`
-	Link     string `json:"link"` // ntfy://… pro QR
-	QR       string `json:"qr"`
+	On         bool   `json:"on"`
+	Server     string `json:"server"`
+	Topic      string `json:"topic"`
+	HasToken   bool   `json:"hasToken"`
+	Link       string `json:"link"`       // ntfy://… (assinar com um toque no Android)
+	NeedServer bool   `json:"needServer"` // o QR precisa do controle pelo celular ligado
+	QR         string `json:"qr"`
 }
 
 func (r *remoteApp) ntfyInfo() rmNtfyInfo {
@@ -357,9 +393,17 @@ func (r *remoteApp) ntfyInfo() rmNtfyInfo {
 		if u.Scheme == "http" {
 			in.Link += "&secure=false"
 		}
-		// a câmera do celular não entende links ntfy://: o QR leva só o nome do tópico (dá pra copiar e colar no app)
-		if png, err := qrcode.Encode(n.Topic, qrcode.Medium, 320); err == nil {
-			in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+		// a câmera não abre links ntfy:// e transforma texto puro em pesquisa (iPhone): o QR abre a
+		// página do celular já na parte do ntfy, com o jeito certo de assinar em cada aparelho
+		r.mu.RLock()
+		en, port, tok := r.cfg.Enabled, r.cfg.Port, r.cfg.Token
+		r.mu.RUnlock()
+		ips := localIPv4s()
+		in.NeedServer = !en || len(ips) == 0
+		if !in.NeedServer {
+			if png, err := qrcode.Encode(fmt.Sprintf("http://%s:%d/?t=%s&go=ntfy", ips[0], port, tok), qrcode.Medium, 320); err == nil {
+				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+			}
 		}
 	}
 	return in
