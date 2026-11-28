@@ -64,11 +64,17 @@ func (f *fakeLoL) handler(t *testing.T) http.HandlerFunc {
 				w.Write([]byte(`[99,17,22,12]`))
 			}
 		case r.Method == "PATCH" && strings.HasPrefix(r.URL.Path, "/lol-champ-select/v1/session/actions/"):
-			var b struct{ ChampionID int }
+			var b struct {
+				ChampionID int
+				Completed  bool
+			}
 			json.NewDecoder(r.Body).Decode(&b)
 			f.hovered = append(f.hovered, b.ChampionID)
+			if b.Completed { // como o LoL de verdade: só confirma com "completed": true
+				f.locked = append(f.locked, b.ChampionID)
+			}
 		case r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/complete"):
-			f.locked = append(f.locked, f.hovered[len(f.hovered)-1])
+			// no LoL de verdade responde OK mas não confirma
 		default:
 			w.WriteHeader(404)
 		}

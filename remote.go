@@ -163,6 +163,7 @@ type remoteApp struct {
 	ddChamps  []rmChamp
 	logs      []string
 	acted     map[int]time.Time
+	told      map[int]int // ação → campeão já avisado
 	diagAt    time.Time
 	diagTurn  int
 	diagPhase string
@@ -446,6 +447,7 @@ func (r *remoteApp) tick() {
 		r.mu.Lock()
 		if phase != "ChampSelect" {
 			r.acted = map[int]time.Time{}
+			r.told = map[int]int{}
 			r.imported = false
 			r.pkCode, r.lastTurn = "", 0
 		}
@@ -662,10 +664,21 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 			if act.Type == "ban" {
 				verb = "baniu"
 			}
-			r.addLog("Automático: " + verb + " " + r.champName(id))
-			r.notify(ntfyMsg{Title: "Automático " + verb + " " + r.champName(id), Message: "Feito no LoL ✅", Priority: 3, Tags: []string{"robot"}})
-			if act.Type == "pick" {
-				r.afterPick(id)
+			r.mu.Lock() // avisa uma vez só por vez (se o LoL não confirmar, tenta de novo sem repetir o aviso)
+			first := r.told[act.ID] != id
+			if r.told == nil {
+				r.told = map[int]int{}
+			}
+			r.told[act.ID] = id
+			r.mu.Unlock()
+			if first {
+				r.addLog("Automático: " + verb + " " + r.champName(id))
+				r.notify(ntfyMsg{Title: "Automático " + verb + " " + r.champName(id), Message: "Feito no LoL ✅", Priority: 3, Tags: []string{"robot"}})
+				if act.Type == "pick" {
+					r.afterPick(id)
+				}
+			} else {
+				diag("automático: o LoL ainda não confirmou a ação %d, tentei de novo", act.ID)
 			}
 			return
 		}
@@ -754,11 +767,16 @@ func (r *remoteApp) hover(actionID, champID int) error {
 	return err
 }
 
+// Travar = marcar o campeão já com "completed": true (é o que confirma de verdade no LoL; o
+// POST .../complete responde OK mas, visto em partida real, não confirma).
 func (r *remoteApp) lock(actionID, champID int) error {
 	if err := r.hover(actionID, champID); err != nil {
 		return err
 	}
-	_, _, err := r.lcuDo("POST", "/lol-champ-select/v1/session/actions/"+strconv.Itoa(actionID)+"/complete", nil)
+	_, _, err := r.lcuDo("PATCH", "/lol-champ-select/v1/session/actions/"+strconv.Itoa(actionID), map[string]any{"championId": champID, "completed": true})
+	if err != nil {
+		_, _, err = r.lcuDo("POST", "/lol-champ-select/v1/session/actions/"+strconv.Itoa(actionID)+"/complete", nil)
+	}
 	return err
 }
 
@@ -1210,9 +1228,8 @@ func (r *remoteApp) info() rmInfo {
 		}
 		if len(in.Links) > 0 {
 			in.Stable = r.stableLink("")
-			// QR: abre direto no PC pela rede de casa (não depende do ntfy). O ícone na tela inicial
-			// (Mais → Criar atalho) usa o link fixo, que funciona também no 4G.
-			if png, err := qrcode.Encode(in.Links[0], qrcode.Medium, 320); err == nil {
+			// QR: abre a tela do Ciência LOL no site (Wi-Fi ou 4G); os endereços diretos ficam embaixo
+			if png, err := qrcode.Encode(in.Stable, qrcode.Medium, 320); err == nil {
 				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 			}
 		}
