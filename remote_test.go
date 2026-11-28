@@ -24,6 +24,7 @@ type fakeLoL struct {
 	hovered  []int
 	tphase   string // fase do timer (padrão BAN_PICK)
 	ban1     bool   // como o LoL de verdade às vezes faz: lista de "baníveis" com 1 só
+	actID    int    // número da ação (o LoL de verdade usa 0 no primeiro ban)
 }
 
 func (f *fakeLoL) stampNow() int64 {
@@ -51,7 +52,7 @@ func (f *fakeLoL) handler(t *testing.T) http.HandlerFunc {
 				"localPlayerCellId": 0,
 				"myTeam":            []map[string]any{{"cellId": 0}, {"cellId": 1, "championId": 17}},
 				"theirTeam":         []map[string]any{{"cellId": 5}},
-				"actions":           [][]map[string]any{{{"id": 7, "actorCellId": 0, "isInProgress": true, "type": f.actType}}},
+				"actions":           [][]map[string]any{{{"id": f.actID, "actorCellId": 0, "isInProgress": true, "type": f.actType}}},
 				"timer":             map[string]any{"adjustedTimeLeftInPhase": f.timeLeft, "internalNowInEpochMs": f.stampNow(), "isInfinite": f.infinite, "phase": map[bool]string{true: f.tphase, false: "BAN_PICK"}[f.tphase != ""]},
 			})
 		case strings.HasSuffix(r.URL.Path, "pickable-champion-ids"):
@@ -253,7 +254,7 @@ func TestTimeLeftNow(t *testing.T) {
 // visto num jogo de verdade: na vez de banir o LoL devolveu só 1 "banível"; e no planejamento a ação
 // de ban já aparece "em andamento", mas não dá pra banir ainda
 func TestRemoteAutoBanListaDoLoLComUmSo(t *testing.T) {
-	f := &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 3000, ban1: true, tphase: "PLANNING"}
+	f := &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 3000, ban1: true, tphase: "PLANNING", actID: 0}
 	r, done := newTestRemote(t, f)
 	defer done()
 	r.cfg.Auto.AutoSelect, r.cfg.Auto.BanList, r.cfg.Auto.UseCiencia = true, []int{22}, false

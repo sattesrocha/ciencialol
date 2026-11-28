@@ -506,8 +506,8 @@ func (r *remoteApp) tick() {
 			}
 			if cs.MyAction != nil {
 				r.mu.Lock()
-				newTurn := cs.MyAction.ID != r.lastTurn
-				r.lastTurn = cs.MyAction.ID
+				newTurn := cs.MyAction.ID+1 != r.lastTurn // +1: o LoL usa 0 como número de ação
+				r.lastTurn = cs.MyAction.ID + 1
 				r.mu.Unlock()
 				if newTurn {
 					r.onMyTurn(cs, a)
@@ -747,7 +747,7 @@ func (r *remoteApp) setDDChamps(ver string, list []rmChamp) {
 }
 
 func (r *remoteApp) hover(actionID, champID int) error {
-	if actionID <= 0 || champID <= 0 {
+	if actionID < 0 || champID <= 0 {
 		return errors.New("escolha inválida")
 	}
 	_, _, err := r.lcuDo("PATCH", "/lol-champ-select/v1/session/actions/"+strconv.Itoa(actionID), map[string]any{"championId": champID})
