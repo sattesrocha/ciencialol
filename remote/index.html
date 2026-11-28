@@ -579,7 +579,7 @@ function renderInstall(s) {
 // ---------- estado ----------
 function hero(s) {
   const h = $('hero');
-  if (!pcOnline) return h.innerHTML = RELAY ? `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o Ciência LOL está aberto no PC, com o controle pelo celular ligado.</p>` : `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o celular está no mesmo Wi-Fi (ou no Tailscale) e se o Ciência LOL está aberto no PC.</p>`;
+  if (!pcOnline) return h.innerHTML = RELAY ? `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o Ciência LOL está aberto no PC, com o controle pelo celular ligado.</p>` : `<div class="ic">📡</div><h2>Sem conexão com o PC</h2><p>Confira se o celular está no mesmo Wi-Fi e se o Ciência LOL está aberto no PC.</p>${state && state.stable ? `<a class="btn" style="margin-top:12px;display:inline-block" href="${state.stable.replace('&a','')}">Abrir pelo 4G</a>` : ''}`;
   const p = s.phase;
   const M = {
     Conectando: [null,'Conectando ao PC…',''],

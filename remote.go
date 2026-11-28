@@ -1209,8 +1209,10 @@ func (r *remoteApp) info() rmInfo {
 			in.Links = append(in.Links, fmt.Sprintf("http://%s:%d/?t=%s", ip, port, tok))
 		}
 		if len(in.Links) > 0 {
-			in.Stable = r.stableLink("") // QR: abre direto no PC
-			if png, err := qrcode.Encode(in.Stable, qrcode.Medium, 320); err == nil {
+			in.Stable = r.stableLink("")
+			// QR: abre direto no PC pela rede de casa (não depende do ntfy). O ícone na tela inicial
+			// (Mais → Criar atalho) usa o link fixo, que funciona também no 4G.
+			if png, err := qrcode.Encode(in.Links[0], qrcode.Medium, 320); err == nil {
 				in.QR = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 			}
 		}

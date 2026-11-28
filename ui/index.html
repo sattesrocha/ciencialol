@@ -3563,7 +3563,7 @@ async function renderCelular(){
     <div>
       <div class="card cel-card"><h3>📱 Controle pelo celular</h3>
         <label class="opt"><input type="checkbox" id="celOn" ${inf.enabled?"checked":""}><span class="sw"></span><span>${inf.enabled?"Ligado":"Desligado"}<small id="celSt"></small></span></label>
-        ${inf.enabled?(inf.links.length?`<div class="cel-qr"><img src="${inf.qr}" alt="QR code"><div class="cel-links">Aponte a câmera do celular pro QR code. Funciona no Wi-Fi e no 4G. Pra ter o ícone na tela inicial, use <b>Mais → Criar atalho</b> na página do celular.<details style="margin-top:6px"><summary style="cursor:pointer">Endereços diretos</summary>${inf.links.map(l=>`<code>${esc(l)}</code>`).join("")}</details><button class="btn sm ghost" id="celNew" style="margin-top:6px">🔄 Gerar link novo</button></div></div>`
+        ${inf.enabled?(inf.links.length?`<div class="cel-qr"><img src="${inf.qr}" alt="QR code"><div class="cel-links">Aponte a câmera do celular pro QR code, no Wi-Fi de casa. Pra usar também no 4G, crie o ícone na tela inicial em <b>Mais → Criar atalho</b>, na página do celular.<details style="margin-top:6px"><summary style="cursor:pointer">Endereços diretos</summary>${inf.links.map(l=>`<code>${esc(l)}</code>`).join("")}</details><button class="btn sm ghost" id="celNew" style="margin-top:6px">🔄 Gerar link novo</button></div></div>`
           :`<div class="note" style="margin-top:12px">Não achei este PC numa rede local. Conecte no Wi-Fi ou no cabo e reabra esta aba.</div>`)
           :`<p class="note" style="margin:12px 0 0">Ao ligar, aparece um QR code pra abrir no celular. Na primeira vez, o Windows pode perguntar se libera o acesso na rede: escolha <b>Permitir</b> (redes privadas).</p>`}
       </div>
