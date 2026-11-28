@@ -22,6 +22,8 @@ type fakeLoL struct {
 	actType  string
 	locked   []int
 	hovered  []int
+	tphase   string // fase do timer (padrão BAN_PICK)
+	ban1     bool   // como o LoL de verdade às vezes faz: lista de "baníveis" com 1 só
 }
 
 func (f *fakeLoL) stampNow() int64 {
@@ -50,12 +52,16 @@ func (f *fakeLoL) handler(t *testing.T) http.HandlerFunc {
 				"myTeam":            []map[string]any{{"cellId": 0}, {"cellId": 1, "championId": 17}},
 				"theirTeam":         []map[string]any{{"cellId": 5}},
 				"actions":           [][]map[string]any{{{"id": 7, "actorCellId": 0, "isInProgress": true, "type": f.actType}}},
-				"timer":             map[string]any{"adjustedTimeLeftInPhase": f.timeLeft, "internalNowInEpochMs": f.stampNow(), "isInfinite": f.infinite, "phase": "BAN_PICK"},
+				"timer":             map[string]any{"adjustedTimeLeftInPhase": f.timeLeft, "internalNowInEpochMs": f.stampNow(), "isInfinite": f.infinite, "phase": map[bool]string{true: f.tphase, false: "BAN_PICK"}[f.tphase != ""]},
 			})
 		case strings.HasSuffix(r.URL.Path, "pickable-champion-ids"):
 			w.Write([]byte(`[99,17,22]`)) // Alistar não está liberado
 		case strings.HasSuffix(r.URL.Path, "bannable-champion-ids"):
-			w.Write([]byte(`[99,17,22,12]`))
+			if f.ban1 {
+				w.Write([]byte(`[99]`))
+			} else {
+				w.Write([]byte(`[99,17,22,12]`))
+			}
 		case r.Method == "PATCH" && strings.HasPrefix(r.URL.Path, "/lol-champ-select/v1/session/actions/"):
 			var b struct{ ChampionID int }
 			json.NewDecoder(r.Body).Decode(&b)
@@ -241,5 +247,26 @@ func TestTimeLeftNow(t *testing.T) {
 	}
 	if v := timeLeftNow(3000, 1_000_000-9000, now); v != 0 {
 		t.Fatalf("não pode ficar negativo, veio %v", v)
+	}
+}
+
+// visto num jogo de verdade: na vez de banir o LoL devolveu só 1 "banível"; e no planejamento a ação
+// de ban já aparece "em andamento", mas não dá pra banir ainda
+func TestRemoteAutoBanListaDoLoLComUmSo(t *testing.T) {
+	f := &fakeLoL{phase: "ChampSelect", actType: "ban", timeLeft: 3000, ban1: true, tphase: "PLANNING"}
+	r, done := newTestRemote(t, f)
+	defer done()
+	r.cfg.Auto.AutoSelect, r.cfg.Auto.BanList, r.cfg.Auto.UseCiencia = true, []int{22}, false
+	r.tick()
+	r.tick() // carrega a lista de campeões
+	if len(f.locked) != 0 {
+		t.Fatalf("no planejamento não pode banir: %v", f.locked)
+	}
+	f.mu.Lock()
+	f.tphase = "BAN_PICK"
+	f.mu.Unlock()
+	r.tick()
+	if len(f.locked) != 1 || f.locked[0] != 22 {
+		t.Fatalf("devia banir a Ashe (22) mesmo com o LoL dizendo que só dá pra banir 1: %v", f.locked)
 	}
 }

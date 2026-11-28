@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -108,6 +109,8 @@ type relayRun struct {
 	lastDL  int64
 	lastPub time.Time
 	failLog bool
+	pausa   time.Time // o ntfy pediu calma (429): espera antes de tentar de novo
+	lastKey string    // fase + vez + partida encontrada (mudou = manda logo)
 }
 
 func (r *remoteApp) relayLoop(ctx context.Context) {
@@ -167,9 +170,29 @@ func (rr *relayRun) pump() {
 	}
 	cmp, _ := json.Marshal(v)
 	o.State = &v
+	// O ntfy.sh grátis aguenta ~1 mensagem a cada 5 s (com uma reserva no começo). Mudança importante
+	// (fase, sua vez, partida encontrada) vai na hora; o resto no máximo a cada 6 s. O timer o celular
+	// conta sozinho. Assim sobra espaço pros avisos de verdade.
+	key := v.Phase
+	if v.ChampSelect != nil {
+		key += "|" + v.ChampSelect.Phase
+		if v.ChampSelect.MyAction != nil {
+			key += fmt.Sprintf("|%d", v.ChampSelect.MyAction.ID)
+		}
+	}
+	if v.ReadyCheck != nil {
+		key += "|rc|" + v.ReadyCheck.PlayerResponse
+	}
 	rr.mu.Lock()
+	if time.Now().Before(rr.pausa) {
+		rr.mu.Unlock()
+		return
+	}
+	since := time.Since(rr.lastPub)
+	important := key != rr.lastKey
 	changed := !bytes.Equal(cmp, rr.last) || abs64(o.Deadline-rr.lastDL) > 2500
-	due := force || (changed && time.Since(rr.lastPub) >= time.Second) || time.Since(rr.lastPub) >= 45*time.Second
+	due := (force && since >= 1500*time.Millisecond) || (important && since >= 1500*time.Millisecond) ||
+		(changed && since >= 6*time.Second) || since >= 50*time.Second
 	if !due {
 		rr.mu.Unlock()
 		return
@@ -178,7 +201,12 @@ func (rr *relayRun) pump() {
 	rr.mu.Unlock()
 	if err := rr.publish(o); err != nil {
 		rr.mu.Lock()
-		rr.force = true // tenta de novo na próxima volta
+		rr.force = true // tenta de novo daqui a pouco (sem ficar martelando o ntfy)
+		if strings.Contains(err.Error(), "429") {
+			rr.pausa = time.Now().Add(40 * time.Second)
+		} else {
+			rr.pausa = time.Now().Add(5 * time.Second)
+		}
 		first := !rr.failLog
 		rr.failLog = true
 		rr.mu.Unlock()
@@ -188,7 +216,7 @@ func (rr *relayRun) pump() {
 		return
 	}
 	rr.mu.Lock()
-	rr.last, rr.lastDL, rr.failLog = cmp, o.Deadline, false
+	rr.last, rr.lastDL, rr.lastKey, rr.failLog = cmp, o.Deadline, key, false
 	rr.mu.Unlock()
 }
 

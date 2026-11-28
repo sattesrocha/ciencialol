@@ -163,6 +163,9 @@ type remoteApp struct {
 	ddChamps  []rmChamp
 	logs      []string
 	acted     map[int]time.Time
+	diagAt    time.Time
+	diagTurn  int
+	diagPhase string
 	lastPhase string
 	ciencia   *rmCiencia
 	imported  bool
@@ -227,6 +230,7 @@ func (r *remoteApp) save() {
 
 func (r *remoteApp) addLog(s string) {
 	line := time.Now().Format("15:04:05") + " " + s
+	diag("log: %s", s)
 	r.mu.Lock()
 	r.logs = append(r.logs, line)
 	if len(r.logs) > 40 {
@@ -469,6 +473,27 @@ func (r *remoteApp) tick() {
 	case "ChampSelect":
 		if cs, err := r.buildChampSelect(); err == nil {
 			v.ChampSelect = cs
+			r.mu.Lock()
+			due := time.Since(r.diagAt) > 2500*time.Millisecond
+			if due {
+				r.diagAt = time.Now()
+			}
+			r.mu.Unlock()
+			if due {
+				ma := "nenhuma"
+				if cs.MyAction != nil {
+					ma = fmt.Sprintf("id=%d tipo=%s champ=%d", cs.MyAction.ID, cs.MyAction.Type, cs.MyAction.ChampionID)
+				}
+				diag("seleção: fase=%s faltam=%.1fs infinito=%v minha_acao=%s auto=%v segundos=%d bans=%v picks=%v ciencia=%v pickable=%d bannable=%d indisponiveis=%d",
+					cs.Phase, cs.TimeLeft, cs.Infinite, ma, a.AutoSelect, a.SecondsLeft, a.BanList, r.pickOrder(a), a.UseCiencia, len(cs.Pickable), len(cs.Bannable), len(cs.Unavail))
+				if cs.MyAction != nil && cs.MyAction.ID != r.diagTurn {
+					r.diagTurn = cs.MyAction.ID
+					r.diagSession()
+				} else if cs.MyAction == nil && cs.Phase != r.diagPhase {
+					r.diagSession()
+				}
+				r.diagPhase = cs.Phase
+			}
 			if cs.MyAction != nil {
 				r.mu.Lock()
 				newTurn := cs.MyAction.ID != r.lastTurn
@@ -579,7 +604,8 @@ func timeLeftNow(adjustedMs, internalNowMs float64, now time.Time) float64 {
 
 func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 	act := cs.MyAction
-	if act == nil || cs.Infinite || cs.TimeLeft > float64(a.SecondsLeft) {
+	// só na hora de banir/escolher de verdade (no planejamento a ação já aparece, mas não dá pra travar)
+	if act == nil || cs.Infinite || cs.Phase != "BAN_PICK" || cs.TimeLeft > float64(a.SecondsLeft) {
 		return
 	}
 	r.mu.Lock() // no máximo uma tentativa a cada 2 s por ação
@@ -592,6 +618,11 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 	list, allowed := r.pickOrder(a), cs.Pickable
 	if act.Type == "ban" {
 		list, allowed = a.BanList, cs.Bannable
+		// Na vez de banir, o LoL às vezes responde a lista de "baníveis" com 1 campeão só. Ban vale
+		// pra qualquer campeão (até os que você não tem), então usa a lista completa.
+		if len(allowed) < 20 {
+			allowed = r.allChampIDs()
+		}
 	}
 	ok := map[int]bool{}
 	for _, id := range allowed {
@@ -600,6 +631,11 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 	for _, id := range cs.Unavail {
 		delete(ok, id)
 	}
+	if act.Type == "ban" { // não bane o que alguém do seu time está querendo jogar
+		for _, p := range cs.MyTeam {
+			delete(ok, p.Intent)
+		}
+	}
 	if act.Type == "ban" { // nunca bane o campeão da própria ciência
 		if c := r.getCiencia(); c != nil {
 			delete(ok, c.Key)
@@ -607,6 +643,7 @@ func (r *remoteApp) autoSelect(cs *rmChampSelect, a rmAuto) {
 	}
 	for _, id := range list {
 		if ok[id] {
+			diag("automático: tentando %s id=%d champ=%d faltam=%.1fs", act.Type, act.ID, id, cs.TimeLeft)
 			if err := r.lock(act.ID, id); err != nil {
 				r.addLog("Automático falhou: " + err.Error())
 				continue
@@ -668,6 +705,21 @@ func (r *remoteApp) champByID(id int) *rmChamp {
 		}
 	}
 	return nil
+}
+
+func (r *remoteApp) allChampIDs() []int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	seen, out := map[int]bool{}, []int{}
+	for _, l := range [][]rmChamp{r.champs, r.ddChamps} {
+		for _, c := range l {
+			if c.ID > 0 && !seen[c.ID] {
+				seen[c.ID] = true
+				out = append(out, c.ID)
+			}
+		}
+	}
+	return out
 }
 
 // o app manda a lista do Data Dragon (nomes e ícones mesmo com o LoL fechado)
