@@ -270,3 +270,20 @@ func TestRemoteAutoBanListaDoLoLComUmSo(t *testing.T) {
 		t.Fatalf("devia banir a Ashe (22) mesmo com o LoL dizendo que só dá pra banir 1: %v", f.locked)
 	}
 }
+
+// pedido de mudança que não traz as listas (ex.: só os segundos) não pode apagar bans/picks
+func TestSetAutoSemListasNaoApaga(t *testing.T) {
+	r, done := newTestRemote(t, &fakeLoL{phase: "Lobby"})
+	defer done()
+	r.setAuto(rmAuto{AutoSelect: true, SecondsLeft: 8, BanList: []int{53}, PickList: []int{145}})
+	var a rmAuto
+	json.Unmarshal([]byte(`{"autoSelect":true,"secondsLeft":18}`), &a)
+	got := r.setAuto(a)
+	if len(got.BanList) != 1 || len(got.PickList) != 1 {
+		t.Fatalf("apagou as listas: %+v", got)
+	}
+	json.Unmarshal([]byte(`{"autoSelect":true,"secondsLeft":18,"banList":[],"pickList":[145]}`), &a)
+	if got := r.setAuto(a); len(got.BanList) != 0 {
+		t.Fatalf("lista vazia de propósito devia apagar: %+v", got)
+	}
+}

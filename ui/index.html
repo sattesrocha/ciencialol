@@ -3604,7 +3604,7 @@ async function renderCelular(){
     $("#ntSave").onclick=()=>{ const b={server:$("#ntSrv").value}; if($("#ntTok").value) b.token=$("#ntTok").value; go(b); };
     if($("#ntTokDel")) $("#ntTokDel").onclick=()=>go({token:""}); };
   if($("#celNew")) $("#celNew").onclick=async()=>{ if(await uiConfirm("Gerar link novo?\n\nO link antigo para de funcionar em todos os celulares; vai ser preciso ler o QR code de novo.", {ok:"Gerar"})){ await window.remoteNewToken(); renderCelular(); } };
-  const saveA=async patch=>{ CEL.inf.view.auto={...CEL.inf.view.auto, ...patch}; try{ await window.remoteSetAuto(JSON.stringify(CEL.inf.view.auto)); }catch(e){ toast("Não deu pra salvar"); } renderCelular(); };
+  const saveA=async patch=>{ if(!CEL.inf.view.auto){ toast("Espere um instante e tente de novo"); return; } CEL.inf.view.auto={...CEL.inf.view.auto, ...patch}; try{ await window.remoteSetAuto(JSON.stringify(CEL.inf.view.auto)); }catch(e){ toast("Não deu pra salvar"); } renderCelular(); };
   document.querySelectorAll("[data-celk]").forEach(el=>el.onchange=()=>saveA({[el.dataset.celk]:el.checked}));
   $("#celSec").onchange=()=>saveA({secondsLeft:Math.max(1,Math.min(60,+$("#celSec").value||8))});
   document.querySelectorAll("[data-celrm]").forEach(b=>b.onclick=()=>{ const [k,i]=b.dataset.celrm.split(":"); const l=[...(CEL.inf.view.auto[k]||[])]; l.splice(+i,1); saveA({[k]:l}); });

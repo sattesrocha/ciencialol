@@ -500,6 +500,7 @@ $('secMinus').onclick = () => saveAuto({secondsLeft: Math.max(1, (auto?.secondsL
 $('secPlus').onclick = () => saveAuto({secondsLeft: Math.min(60, (auto?.secondsLeft || 8) + 1)});
 let savingAuto = 0;
 async function saveAuto(patch) {
+  if (!auto) return toast('Espere conectar com o PC pra mudar o automático.'); // sem o estado do PC não dá pra mandar só um pedaço (apagaria as listas)
   auto = {...auto, ...patch}; renderAuto(); savingAuto = Date.now();
   try { auto = await api('/api/auto', auto); } catch(e) { toast(e); }
   renderAuto();

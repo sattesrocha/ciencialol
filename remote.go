@@ -263,7 +263,17 @@ func (r *remoteApp) setAuto(a rmAuto) rmAuto {
 		}
 		return out
 	}
+	r.mu.Lock()
+	// lista que não veio (nil) = não mexe; só uma lista vazia de propósito ([]) apaga
+	if a.BanList == nil {
+		a.BanList = r.cfg.Auto.BanList
+	}
+	if a.PickList == nil {
+		a.PickList = r.cfg.Auto.PickList
+	}
+	r.mu.Unlock()
 	a.BanList, a.PickList = clip(a.BanList), clip(a.PickList)
+	diag("automático alterado: aceitar=%v ban/pick=%v ciencia=%v importar=%v segundos=%d bans=%v picks=%v", a.AutoAccept, a.AutoSelect, a.UseCiencia, a.AutoImport, a.SecondsLeft, a.BanList, a.PickList)
 	r.mu.Lock()
 	r.cfg.Auto = a
 	r.mu.Unlock()
